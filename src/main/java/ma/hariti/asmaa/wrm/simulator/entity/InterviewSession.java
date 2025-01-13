@@ -17,8 +17,8 @@ import java.util.UUID;
 @Table(name = "interview_sessions")
 public class InterviewSession {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotBlank(message = "Position is required")
     @Size(min = 2, max = 100, message = "Position must be between 2 and 100 characters")

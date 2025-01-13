@@ -20,8 +20,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Answer {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotBlank(message = "Answer content is required")
     @Column(columnDefinition = "TEXT")
