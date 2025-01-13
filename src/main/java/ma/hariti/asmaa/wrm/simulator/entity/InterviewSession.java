@@ -10,13 +10,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "interview_sessions")
-
 public class InterviewSession {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -36,10 +34,16 @@ public class InterviewSession {
     private Float finalScore;
 
     @ElementCollection
-    @CollectionTable(name = "improvement_points",
+    @CollectionTable(name = "strong_points",
             joinColumns = @JoinColumn(name = "session_id"))
     @Column(name = "point")
-    private List<String> improvementPoints = new ArrayList<>();
+    private List<String> strongPoints = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "weak_points",
+            joinColumns = @JoinColumn(name = "session_id"))
+    @Column(name = "point")
+    private List<String> weakPoints = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -49,4 +53,3 @@ public class InterviewSession {
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
     private List<Question> questions = new ArrayList<>();
 }
-
