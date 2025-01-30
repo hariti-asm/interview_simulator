@@ -34,7 +34,7 @@ public class Question {
     private String content;
 
     @NotBlank(message = "Expected answer is required")
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String expectedAnswer;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,7 +42,7 @@ public class Question {
     @NotNull(message = "Interview session is required")
     private InterviewSession session;
 
-    @OneToOne(mappedBy = "question", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "question", cascade = CascadeType.ALL, optional = true )
     private Answer answer;
 }
 

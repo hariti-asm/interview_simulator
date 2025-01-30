@@ -6,12 +6,14 @@ import ma.hariti.asmaa.wrm.simulator.entity.Question;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
+
 @Mapper(componentModel = "spring")
 public interface QuestionMapper {
-    @Mapping(target = "sessionId", source = "session.id")
     QuestionDTO toDTO(Question question);
 
-    @Mapping(target = "session", ignore = true)
-    @Mapping(target = "answer", ignore = true)
-    Question toEntity(QuestionDTO questionDTO);
+    Question toEntity(QuestionDTO dto);
+
+    List<QuestionDTO> toDTOList(List<Question> questions);
 }
