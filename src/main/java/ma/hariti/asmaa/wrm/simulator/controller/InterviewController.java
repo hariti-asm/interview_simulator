@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ma.hariti.asmaa.wrm.simulator.dto.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.QuestionDTO;
-import ma.hariti.asmaa.wrm.simulator.service.AIInterviewService;
+import ma.hariti.asmaa.wrm.simulator.service.serviceImpl.AIInterviewServiceImpl;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class InterviewController {
 
-    private final AIInterviewService aiInterviewService;
+    private final AIInterviewServiceImpl aiInterviewService;
 
     @PostMapping("/start")
     public InterviewSessionDTO startNewSession(
