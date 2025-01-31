@@ -33,7 +33,6 @@ public class Question {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    @NotBlank(message = "Expected answer is required")
     @Column(columnDefinition = "TEXT", nullable = false)
     private String expectedAnswer;
 

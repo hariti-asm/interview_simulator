@@ -11,8 +11,8 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface QuestionMapper {
+    @Mapping(source = "session.id", target = "sessionId")
     QuestionDTO toDTO(Question question);
-
     Question toEntity(QuestionDTO dto);
 
     List<QuestionDTO> toDTOList(List<Question> questions);

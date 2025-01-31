@@ -1,5 +1,6 @@
 package ma.hariti.asmaa.wrm.simulator.service;
 
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,12 @@ import java.util.Map;
 
 @Service
 public class AIService {
+
+    @Data
+    public static class QuestionResponse {
+        private String question;
+        private String expectedAnswer;
+    }
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -27,13 +34,35 @@ public class AIService {
         return callOpenAI(prompt);
     }
 
-    public String generateQuestion(String position, String experienceLevel, String context) {
+    public QuestionResponse generateQuestion(String position, String experienceLevel, String context) {
         String prompt = String.format(
                 "Based on the context of interviewing for a %s position with %s experience level, " +
-                        "and considering the previous context: '%s', generate a relevant technical interview question.",
+                        "and considering the previous context: '%s', generate a technical interview question " +
+                        "AND its expected answer. Format the response exactly like this:\n" +
+                        "QUESTION: [your question here]\n" +
+                        "EXPECTED_ANSWER: [detailed expected answer here]",
                 position, experienceLevel, context
         );
-        return callOpenAI(prompt);
+
+        String response = callOpenAI(prompt);
+        return parseQuestionResponse(response);
+    }
+
+    private QuestionResponse parseQuestionResponse(String response) {
+        QuestionResponse qr = new QuestionResponse();
+        String[] parts = response.split("EXPECTED_ANSWER:");
+
+        if (parts.length >= 2) {
+            String questionPart = parts[0].replace("QUESTION:", "").trim();
+            String answerPart = parts[1].trim();
+
+            qr.setQuestion(questionPart);
+            qr.setExpectedAnswer(answerPart);
+        } else {
+            throw new IllegalStateException("Invalid response format from AI");
+        }
+
+        return qr;
     }
 
     public String generateQuestionFeedback(String question, String answer) {

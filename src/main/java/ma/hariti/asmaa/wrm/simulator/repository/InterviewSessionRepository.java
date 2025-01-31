@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 @Repository
-public interface InterviewSessionRepository  extends JpaRepository<InterviewSession,Long>{
+public interface InterviewSessionRepository extends JpaRepository<InterviewSession, Long> {
     List<InterviewSession> findByUserId(Long userId);
     List<InterviewSession> findByUserIdOrderByStartTimeDesc(Long userId);
 }
