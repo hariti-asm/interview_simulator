@@ -1,26 +1,29 @@
-<header class="bg-white border-b">
+<header class="bg-white border-b border-gray-200">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-16">
-      <!-- Logo -->
+    <div class="flex justify-between items-center h-16 my-2">
       <div class="flex items-center">
         <a href="/" class="text-emerald-500 text-xl font-bold flex items-center">
-          <span class="text-2xl mr-1">●</span> Intervio
+          <span class="text-emerald-500 text-2xl mr-2">●</span> Intervio
         </a>
       </div>
 
       <!-- Navigation -->
-      <nav class="hidden md:flex space-x-8">
-        <a href="#" class="text-gray-600 hover:text-emerald-500">About Us</a>
-        <a href="#" class="text-gray-600 hover:text-emerald-500">Features</a>
-        <a href="#" class="text-gray-600 hover:text-emerald-500">Testimonials</a>
-        <a href="#" class="text-gray-600 hover:text-emerald-500">Pricing</a>
+      <nav class="hidden md:flex items-center p-1 rounded-full border border-gray-200">
+        <a href="#" class="bg-emerald-500 text-white px-6 py-2 rounded-full">Home</a>
+        <a href="#" class="text-gray-500 px-6 py-2 hover:text-emerald-500">About Us</a>
+        <a href="#" class="text-gray-500 px-6 py-2 hover:text-emerald-500 flex items-center">
+          Features
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </a>
+        <a href="#" class="text-gray-500 px-6 py-2 hover:text-emerald-500">Testimonial</a>
       </nav>
 
-      <!-- CTA Buttons -->
-      <div class="flex items-center space-x-4">
-        <button class="text-gray-600 hover:text-emerald-500">Sign In</button>
-        <button class="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition">
-          Free Download
+      <!-- CTA Button -->
+      <div class="flex items-center">
+        <button class="bg-emerald-500 text-white px-8 py-2.5 rounded-full hover:bg-emerald-600 transition">
+          Start Interview
         </button>
       </div>
     </div>
