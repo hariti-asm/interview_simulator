@@ -1,11 +1,11 @@
 package ma.hariti.asmaa.wrm.simulator.service;
 
-import ma.hariti.asmaa.wrm.simulator.service.serviceImpl.AIServiceImpl;
+import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.AIServiceDefault;
 
 public interface AIService {
     String generateInitialContext(String position, String experienceLevel);
 
-    AIServiceImpl.QuestionResponse generateQuestion(String position, String experienceLevel, String context);
+    AIServiceDefault.QuestionResponse generateQuestion(String position, String experienceLevel, String context);
 
     String generateQuestionFeedback(String question, String answer);
 

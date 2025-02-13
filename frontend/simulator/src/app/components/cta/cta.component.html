@@ -1,0 +1,80 @@
+<!-- CTA Section -->
+<section class=" m-5 bg-emerald-500 py-16 relative overflow-hidden rounded-3xl">
+  <div class="max-w-5xl mx-auto px-4 h-full max-h-[10%] sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row items-center justify-between">
+
+      <!-- Left Content -->
+      <div class="lg:w-1/2 text-white mb-8 lg:mb-0">
+        <h2 class="text-4xl font-semibold mb-4 leading-tight">
+          Ready to Revolutionize Your Hiring?
+        </h2>
+        <p class="text-md mb-8 max-w-xl opacity-90">
+          Elevate your hiring process with Intervio's AI-powered platform. Join the future of hiring and unlock a new level of efficiency, fairness, and insights.
+        </p>
+        <div class="flex gap-4">
+          <button class="bg-white text-emerald-500 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+            Try for Free Now
+          </button>
+          <button class="border-2 border-white text-white px-8 py-3 rounded-full  hover:bg-emerald-600 transition duration-300">
+            Request Demo
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Content -->
+      <div class=" relative">
+        <div class="relative">
+
+
+          <div class="  bg-white rounded-xl p-3 shadow-lg max-w-xs max-h-xs">
+
+            <p class="text-xs text-gray-600 mb-4">The presentation of talent is good. Check the breakdown summary of AI Video Score.</p>
+
+            <!-- Score Grid -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div *ngFor="let score of scores | keyvalue" class="flex flex-col items-center">
+                <div class="relative w-16 h-16">
+                  <svg class="w-full h-full transform -rotate-90">
+                    <circle cx="32" cy="32" r="28" class="stroke-current text-gray-200" stroke-width="6" fill="none"/>
+                    <circle cx="32" cy="32" r="28"
+                            [class]="'stroke-current ' + (score.key === 'opportunistic' ? 'text-orange-400 text-xs' : 'text-emerald-500 text-xs')"
+                            stroke-width="6"
+                            fill="none"
+                            [attr.stroke-dasharray]="circumference"
+                            [attr.stroke-dashoffset]="calculateOffset(score.value)"
+                    />
+                  </svg>
+                  <span class="absolute inset-0 flex items-center justify-center font-semibold text-xs">
+                    {{score.value}}%
+                  </span>
+                </div>
+                <span class="text-sm text-gray-600 mt-1">{{formatLabel(score.key)}}</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2 mb-4">
+              <button class="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Shortlist
+              </button>
+              <button class="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Reject
+              </button>
+            </div>
+
+            <button class="w-full bg-emerald-500 text-white py-2 rounded-lg font-medium hover:bg-emerald-600 transition">
+              Hire Talent
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
