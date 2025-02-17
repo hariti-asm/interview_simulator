@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/simulator
+    username: ${DB_USERNAME:asmaa123}
+    password: ${DB_PASSWORD:asmaa123}
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  mail:
+    host: localhost
+    port: 3025
+    username: test
+    password: test
+

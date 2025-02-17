@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 @Data
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -30,7 +33,10 @@ public class User {
     @Email(message = "Please provide a valid email address")
     @Column(unique = true)
     private String email;
-
+    @Column(nullable = false)
+    private String password;
+    @Enumerated(EnumType.STRING)
+    private Role role;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<InterviewSession> sessions = new ArrayList<>();
 }
