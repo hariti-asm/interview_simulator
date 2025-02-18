@@ -1,13 +1,13 @@
 package ma.hariti.asmaa.wrm.simulator.entity;
 
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
 
 @Entity
-@Table(name = "admins")
+@DiscriminatorValue("ADMIN")
 @SuperBuilder
 @NoArgsConstructor
 public class Admin extends User {
@@ -16,4 +16,3 @@ public class Admin extends User {
         super.setRole(Role.ADMIN);
     }
 }
-

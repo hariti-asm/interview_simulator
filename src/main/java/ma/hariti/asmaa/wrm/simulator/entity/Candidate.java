@@ -1,17 +1,18 @@
 package ma.hariti.asmaa.wrm.simulator.entity;
 
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
+
 @Entity
-@Table(name = "candidates")
+@DiscriminatorValue("CANDIDATE")
 @SuperBuilder
 @NoArgsConstructor
 public class Candidate extends User {
     @Override
     public void setRole(Role role) {
-        super.setRole(Role.ADMIN);
+        super.setRole(Role.CANDIDATE); // Fixed: This should be CANDIDATE, not ADMIN
     }
 }

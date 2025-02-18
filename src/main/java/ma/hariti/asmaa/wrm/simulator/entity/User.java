@@ -4,20 +4,20 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "user_type")
 @Table(name = "users")
 @Data
-@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -33,10 +33,16 @@ public class User {
     @Email(message = "Please provide a valid email address")
     @Column(unique = true)
     private String email;
+
     @Column(nullable = false)
     private String password;
+
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    private String resetToken;
+    private LocalDateTime resetTokenExpiryDate;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<InterviewSession> sessions = new ArrayList<>();
 }
