@@ -1,6 +1,7 @@
 package ma.hariti.asmaa.wrm.simulator.mapper;
 
 import ma.hariti.asmaa.wrm.simulator.dto.request.ForgotPasswordRequest;
+import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,13 +18,13 @@ public interface InterviewSessionMapper {
     @Mapping(target = "strongPoints", source = "strongPoints")
     @Mapping(target = "weakPoints", source = "weakPoints")
     @Mapping(target = "userId", source = "user.id")
-    ForgotPasswordRequest.InterviewSessionDTO toDTO(InterviewSession session);
+    InterviewSessionDTO toDTO(InterviewSession session);
 
     @Mapping(target = "interviewContext", ignore = true)
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "specialization", ignore = true)
     @Mapping(target = "experienceLevel", ignore = true)
-    InterviewSession toEntity(ForgotPasswordRequest.InterviewSessionDTO dto);
+    InterviewSession toEntity(InterviewSessionDTO dto);
 
-    List<ForgotPasswordRequest.InterviewSessionDTO> toDTOList(List<InterviewSession> sessions);
+    List<InterviewSessionDTO> toDTOList(List<InterviewSession> sessions);
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.ForgotPasswordRequest;
+import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.RegisterUserRequest;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
@@ -35,7 +36,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
     @Transactional
 
-    public ForgotPasswordRequest.InterviewSessionDTO startNewSession(String position, String specialization, String experienceLevel) {
+    public InterviewSessionDTO startNewSession(String position, String specialization, String experienceLevel) {
         log.info("Starting new session with position: {}, specialization: {}, level: {}",
                 position, specialization, experienceLevel);
 

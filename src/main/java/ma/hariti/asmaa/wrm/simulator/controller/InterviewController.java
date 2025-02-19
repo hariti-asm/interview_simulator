@@ -1,10 +1,7 @@
 package ma.hariti.asmaa.wrm.simulator.controller;
 
 import lombok.RequiredArgsConstructor;
-import ma.hariti.asmaa.wrm.simulator.dto.request.ForgotPasswordRequest;
-import ma.hariti.asmaa.wrm.simulator.dto.request.LoginRequest;
-import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.request.RegisterUserRequest;
+import ma.hariti.asmaa.wrm.simulator.dto.request.*;
 import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.AIInterviewServiceDefault;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +13,7 @@ public class InterviewController {
     private final AIInterviewServiceDefault aiInterviewService;
 
     @PostMapping("/start")
-    public ForgotPasswordRequest.InterviewSessionDTO startNewSession(
+    public InterviewSessionDTO startNewSession(
             @RequestParam String position,
             @RequestParam String specialization,
             @RequestParam String experienceLevel
