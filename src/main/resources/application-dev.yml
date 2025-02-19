@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/neovesta_db
+    url: jdbc:postgresql://localhost:5432/simulator
     username: asmaa123
     password: asmaa123
     driver-class-name: org.postgresql.Driver

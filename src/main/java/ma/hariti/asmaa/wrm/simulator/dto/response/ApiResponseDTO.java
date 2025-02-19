@@ -1,4 +1,4 @@
-package ma.hariti.asmaa.wrm.simulator.dto;
+package ma.hariti.asmaa.wrm.simulator.dto.response;
 
 
 import lombok.AccessLevel;

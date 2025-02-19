@@ -25,7 +25,7 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
-        message.setSubject("Welcome to Neovesta");
+        message.setSubject("Welcome to Intervo");
         message.setText("""
             Welcome to  Intervo!
             
@@ -35,7 +35,7 @@ public class EmailServiceImpl implements EmailService {
             Please change your password after logging in for security purposes.
             
             Best regards,
-            The Neovesta Team
+            The Intervo Team
             """.formatted(password));
 
         try {
@@ -51,7 +51,7 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
-        message.setSubject("Password Reset Request - Neovesta");
+        message.setSubject("Password Reset Request - Intervo");
         message.setText("""
             Hello,
             
@@ -62,7 +62,7 @@ public class EmailServiceImpl implements EmailService {
             This token will expire in 30 minutes.
             
             Best regards,
-            The Neovesta Team
+            The Intervo Team
             """.formatted(resetToken));
 
         try {

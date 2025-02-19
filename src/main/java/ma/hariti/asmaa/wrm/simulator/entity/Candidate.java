@@ -13,6 +13,6 @@ import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
 public class Candidate extends User {
     @Override
     public void setRole(Role role) {
-        super.setRole(Role.CANDIDATE); // Fixed: This should be CANDIDATE, not ADMIN
+        super.setRole(Role.CANDIDATE);
     }
 }

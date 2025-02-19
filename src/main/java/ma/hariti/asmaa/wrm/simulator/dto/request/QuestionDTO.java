@@ -1,10 +1,9 @@
-package ma.hariti.asmaa.wrm.simulator.dto;
-
+package ma.hariti.asmaa.wrm.simulator.dto.request;
 
 import lombok.Data;
 
 @Data
-public class QuestionDTO {
+public  class QuestionDTO {
     private Long id;
     private String content;
     private String expectedAnswer;

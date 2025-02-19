@@ -3,9 +3,9 @@ package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ma.hariti.asmaa.wrm.simulator.dto.AnswerDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.InterviewSessionDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.ForgotPasswordRequest;
+import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.RegisterUserRequest;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
 import ma.hariti.asmaa.wrm.simulator.mapper.AnswerMapper;
@@ -35,7 +35,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
     @Transactional
 
-    public InterviewSessionDTO startNewSession(String position, String specialization, String experienceLevel) {
+    public ForgotPasswordRequest.InterviewSessionDTO startNewSession(String position, String specialization, String experienceLevel) {
         log.info("Starting new session with position: {}, specialization: {}, level: {}",
                 position, specialization, experienceLevel);
 
@@ -60,7 +60,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     }
 
     @Transactional
-    public AnswerDTO processAnswer(Long sessionId, Long questionId, String answer) {
+    public RegisterUserRequest.AnswerDTO processAnswer(Long sessionId, Long questionId, String answer) {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found with id: " + sessionId));
 
@@ -82,7 +82,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         Float score = answerService.calculateScore(answer, expectedAnswer);
         List<String> improvementPoints = answerService.generateImprovementSuggestions(answer, expectedAnswer);
 
-        AnswerDTO answerDTO = answerMapper.toDTO(feedback, followUpQuestion);
+        RegisterUserRequest.AnswerDTO answerDTO = answerMapper.toDTO(feedback, followUpQuestion);
         answerDTO.setScore(score);
         answerDTO.setImprovementSuggestions(improvementPoints);
         answerDTO.setContent(answer);

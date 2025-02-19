@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:neovesta}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:Intervo}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:
@@ -23,4 +23,3 @@ spring:
 logging:
   level:
     root: INFO
-    com.neovesta: INFO

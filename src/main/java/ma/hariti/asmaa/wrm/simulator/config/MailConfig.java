@@ -43,12 +43,10 @@ public class MailConfig {
             props.put("mail.smtp.writetimeout", "5000");
             props.put("mail.debug", "true");
 
-            // Test the connection
             mailSender.testConnection();
 
             return mailSender;
         } catch (Exception e) {
-            // Log the error but don't prevent application startup
             System.err.println("Mail configuration error: " + e.getMessage());
             return mailSender;
         }
