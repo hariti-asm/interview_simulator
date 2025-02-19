@@ -66,7 +66,7 @@ public class UserDetailsImpl implements UserDetails {
         return UserResponse.builder()
                 .id(id)
                 .email(email)
-                .firstName(firstName)
+                .name(firstName)
                 .role(role)
                 .build();
     }

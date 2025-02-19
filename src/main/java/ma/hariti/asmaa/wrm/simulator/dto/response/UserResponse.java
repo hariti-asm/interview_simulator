@@ -16,11 +16,8 @@ import java.util.UUID;
 public class UserResponse {
     private Long id;
     private String email;
-    private String firstName;
-    private String lastName;
-    private String phoneNumber;
+    private String name;
     private Role role;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+
     private boolean status;
 }
