@@ -1,5 +1,6 @@
 package ma.hariti.asmaa.wrm.simulator.mapper;
 
+import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.RegisterUserRequest;
 import ma.hariti.asmaa.wrm.simulator.entity.Answer;
 import org.mapstruct.Mapper;
@@ -12,7 +13,7 @@ public interface AnswerMapper {
     @Mapping(source = "score", target = "score")
     @Mapping(source = "improvementSuggestions", target = "improvementSuggestions")
     @Mapping(source = "id", target = "id")
-    RegisterUserRequest.AnswerDTO toDTO(Answer answer);
+    AnswerDTO toDTO(Answer answer);
 
     @Mapping(target = "content", ignore = true)
     @Mapping(target = "score", ignore = true)
@@ -21,8 +22,8 @@ public interface AnswerMapper {
     @Mapping(target = "questionId", ignore = true)
     @Mapping(source = "feedback", target = "feedback")
     @Mapping(source = "followUpQuestion", target = "followUpQuestion")
-    RegisterUserRequest.AnswerDTO toDTO(String feedback, String followUpQuestion);
+     AnswerDTO toDTO(String feedback, String followUpQuestion);
 
     @Mapping(target = "question.id", source = "questionId")
-    Answer toEntity(RegisterUserRequest.AnswerDTO dto);
+    Answer toEntity(AnswerDTO dto);
 }

@@ -3,17 +3,16 @@ package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ma.hariti.asmaa.wrm.simulator.dto.request.ForgotPasswordRequest;
-import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.request.RegisterUserRequest;
+import ma.hariti.asmaa.wrm.simulator.dto.request.*;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
+import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.mapper.AnswerMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.InterviewSessionMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.QuestionMapper;
 import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.QuestionRepository;
+import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.service.AIInterviewService;
 import ma.hariti.asmaa.wrm.simulator.service.AnswerService;
 import org.springframework.stereotype.Service;
@@ -33,37 +32,41 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     private final AnswerMapper answerMapper;
     private final AnswerService answerService;
     private final QuestionRepository questionRepository;
+    private final UserRepository userRepository;
 
     @Transactional
+    public InterviewSessionDTO startNewSession(Long userId, String position, String specialization, String experienceLevel) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-    public InterviewSessionDTO startNewSession(String position, String specialization, String experienceLevel) {
-        log.info("Starting new session with position: {}, specialization: {}, level: {}",
-                position, specialization, experienceLevel);
+        log.info("Starting new session for user {} with position: {}, specialization: {}, level: {}",
+                userId, position, specialization, experienceLevel);
 
         InterviewSession session = new InterviewSession();
+        session.setUser(user);
         session.setPosition(position);
         session.setStartTime(LocalDateTime.now());
         session.setSpecialization(specialization);
         session.setExperienceLevel(experienceLevel);
-
-        String initialContext = aiService.generateInitialContext(position, experienceLevel);
-        log.info("Generated initial context: {}", initialContext);
-        session.setInterviewContext(initialContext);
+        session.setInterviewContext(aiService.generateInitialContext(position, experienceLevel));
 
         try {
             InterviewSession savedSession = sessionRepository.save(session);
-            log.info("Saved session with ID: {}", savedSession.getId());
+            log.info("Saved session with ID: {} for user: {}", savedSession.getId(), userId);
             return sessionMapper.toDTO(savedSession);
         } catch (Exception e) {
-            log.error("Error saving session", e);
+            log.error("Error saving session for user: {}", userId, e);
             throw e;
         }
     }
-
     @Transactional
-    public RegisterUserRequest.AnswerDTO processAnswer(Long sessionId, Long questionId, String answer) {
+    public AnswerDTO processAnswer(Long userId, Long sessionId, Long questionId, String answer) {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found with id: " + sessionId));
+
+        if (!userId.equals(session.getUser().getId())) {
+            throw new SecurityException("User not authorized to access this session");
+        }
 
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
@@ -83,7 +86,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         Float score = answerService.calculateScore(answer, expectedAnswer);
         List<String> improvementPoints = answerService.generateImprovementSuggestions(answer, expectedAnswer);
 
-        RegisterUserRequest.AnswerDTO answerDTO = answerMapper.toDTO(feedback, followUpQuestion);
+     AnswerDTO answerDTO = answerMapper.toDTO(feedback, followUpQuestion);
         answerDTO.setScore(score);
         answerDTO.setImprovementSuggestions(improvementPoints);
         answerDTO.setContent(answer);
@@ -93,9 +96,13 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     }
 
     @Transactional
-    public QuestionDTO generateNextQuestion(Long sessionId) {
+    public QuestionDTO generateNextQuestion(Long userId, Long sessionId) {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found"));
+
+        if (!userId.equals(session.getUser().getId())) {
+            throw new SecurityException("User not authorized to access this session");
+        }
 
         AIServiceDefault.QuestionResponse questionResponse = aiService.generateQuestion(
                 session.getPosition(),
@@ -113,7 +120,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         session.getQuestions().add(savedQuestion);
         sessionRepository.save(session);
 
-        log.info("Generated and saved question with ID: {}", savedQuestion.getId());
+        log.info("Generated and saved question with ID: {} for user: {}", savedQuestion.getId(), userId);
         return questionMapper.toDTO(savedQuestion);
     }
 }

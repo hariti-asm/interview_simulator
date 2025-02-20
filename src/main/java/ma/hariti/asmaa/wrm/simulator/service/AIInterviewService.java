@@ -1,14 +1,11 @@
 package ma.hariti.asmaa.wrm.simulator.service;
 
-import ma.hariti.asmaa.wrm.simulator.dto.request.ForgotPasswordRequest;
-import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
-import ma.hariti.asmaa.wrm.simulator.dto.request.RegisterUserRequest;
+import ma.hariti.asmaa.wrm.simulator.dto.request.*;
 
 public interface AIInterviewService {
-   InterviewSessionDTO startNewSession(String position, String specialization, String experienceLevel);
+   InterviewSessionDTO startNewSession( Long userId,String position, String specialization, String experienceLevel);
 
-    RegisterUserRequest.AnswerDTO processAnswer(Long sessionId, Long questionId, String answer);
+    AnswerDTO processAnswer( Long userId, Long sessionId, Long questionId, String answer);
 
-    QuestionDTO generateNextQuestion(Long sessionId);
+    QuestionDTO generateNextQuestion( Long userId,Long sessionId);
 }

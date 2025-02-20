@@ -29,16 +29,4 @@ public class RegisterUserRequest {
     private String password;
 
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AnswerDTO {
-        private Long id;
-        private String content;
-        private Float score;
-        private List<String> improvementSuggestions;
-        private Long questionId;
-        private String feedback;
-        private String followUpQuestion;
-    }
 }

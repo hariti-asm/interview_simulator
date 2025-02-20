@@ -1,23 +1,33 @@
 package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.service.AIService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
+@Slf4j
 @Service
 public class AIServiceDefault implements AIService {
 
     private final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
     @Value("${openai.api.key}")
     private String apiKey;
+    private final RestTemplate restTemplate;
+    public AIServiceDefault(RestTemplateBuilder restTemplateBuilder) {
+        this.restTemplate = restTemplateBuilder
+                .build();
+    }
 
     @Override
     public String generateInitialContext(String position, String experienceLevel) {
@@ -80,8 +90,6 @@ public class AIServiceDefault implements AIService {
     }
 
     private String callOpenAI(String prompt) {
-        RestTemplate restTemplate = new RestTemplate();
-
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiKey);
         headers.set("Content-Type", "application/json");
@@ -97,19 +105,34 @@ public class AIServiceDefault implements AIService {
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(OPENAI_API_URL, request, Map.class);
+        try {
+            log.debug("Sending request to OpenAI API with prompt: {}", prompt);
+            ResponseEntity<Map> response = restTemplate.postForEntity(OPENAI_API_URL, request, Map.class);
 
-        if (response.getBody() != null && response.getBody().containsKey("choices")) {
-            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-            if (!choices.isEmpty()) {
-                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-                return (String) message.get("content");
+            if (response.getBody() != null && response.getBody().containsKey("choices")) {
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+                if (!choices.isEmpty()) {
+                    Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                    return (String) message.get("content");
+                }
             }
+
+            throw new RuntimeException("Invalid response format from OpenAI API");
+
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed with OpenAI API. Please check your API key.", e);
+            throw new RuntimeException("Failed to authenticate with OpenAI API. Please check your API key.", e);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            log.error("Rate limit exceeded with OpenAI API.", e);
+            throw new RuntimeException("OpenAI API rate limit exceeded. Please try again later.", e);
+        } catch (HttpClientErrorException e) {
+            log.error("HTTP error occurred while calling OpenAI API: {}", e.getStatusCode(), e);
+            throw new RuntimeException("Error calling OpenAI API: " + e.getStatusCode(), e);
+        } catch (RestClientException e) {
+            log.error("Error occurred while calling OpenAI API", e);
+            throw new RuntimeException("Failed to communicate with OpenAI API", e);
         }
-
-        return "No response from OpenAI.";
     }
-
     @Data
     public static class QuestionResponse {
         private String question;
