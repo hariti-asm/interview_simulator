@@ -36,8 +36,9 @@ public class InterviewController {
             @RequestParam Long questionId,
             @RequestParam String answer
     ) {
-        Long userId = Long.parseLong(userDetails.getUsername());
-        return aiInterviewService.processAnswer(userId, sessionId, questionId, answer);
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        return aiInterviewService.processAnswer(user.getId(), sessionId, questionId, answer);
     }
 
     @GetMapping("/next-question")
@@ -45,7 +46,8 @@ public class InterviewController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam Long sessionId
     ) {
-        Long userId = Long.parseLong(userDetails.getUsername());
-        return aiInterviewService.generateNextQuestion(userId, sessionId);
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        return aiInterviewService.generateNextQuestion(user.getId(), sessionId);
     }
 }
