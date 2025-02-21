@@ -8,10 +8,12 @@ import {TestimonialsComponent} from './components/testimonials/testimonials.comp
 import {FooterComponent} from './components/footer/footer.component';
 import {CtaComponent} from './components/cta/cta.component';
 import {UsageComponent} from './components/usage/usage.component';
+import {LoginComponent} from './components/auth/login/login.component';
+import {ForgetPasswordComponent} from './components/auth/forget-password/forget-password.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, HeroComponent, FeaturesComponent, StatsComponent, TestimonialsComponent, FooterComponent, CtaComponent, UsageComponent],
+  imports: [RouterOutlet, HeaderComponent, HeroComponent, FeaturesComponent, StatsComponent, TestimonialsComponent, FooterComponent, CtaComponent, UsageComponent,ForgetPasswordComponent],
   templateUrl: './app.component.html',
   standalone: true,
   styleUrl: './app.component.css'
