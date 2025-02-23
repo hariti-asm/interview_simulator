@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import {NgClass, NgIf} from '@angular/common';
-import { RouterLink } from '@angular/router';
+import {RouterLink, RouterModule} from '@angular/router';
 
 enum UserRoles {
   CANDIDATE = 'candidate',
@@ -14,7 +14,8 @@ enum UserRoles {
     ReactiveFormsModule,
     NgIf,
     RouterLink,
-    NgClass
+    NgClass,
+    RouterModule
   ],
   templateUrl: './register.component.html',
   standalone: true,

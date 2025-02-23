@@ -8,7 +8,7 @@
       <ng-container *ngFor="let testimonial of testimonials">
         <div class="bg-white p-6 rounded-lg border">
           <div class="flex items-center mb-4">
-            <img [src]="testimonial.avatar" alt="User avatar" class="w-12 h-12 rounded-full mr-4">
+            <img ngSrc="testimonial.avatar" alt="User avatar" class="w-12 h-12 rounded-full mr-4" fill>
             <div>
               <h4 class="font-semibold text-gray-900">{{testimonial.name}}</h4>
               <p class="text-gray-600 text-sm">{{testimonial.position}}</p>

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import {NgForOf, NgOptimizedImage} from '@angular/common';
 
 interface Testimonial {
   name: string;
@@ -12,7 +13,10 @@ interface Testimonial {
   selector: 'app-testimonials',
   templateUrl: './testimonials.component.html',
   standalone: true,
-  imports: []
+  imports: [
+    NgForOf,
+    NgOptimizedImage
+  ]
 })
 export class TestimonialsComponent {
   testimonials: Testimonial[] = [
