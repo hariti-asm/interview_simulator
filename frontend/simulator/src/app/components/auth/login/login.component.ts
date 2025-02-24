@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
-import {CommonModule, NgClass, NgIf} from '@angular/common';
-import {AuthService} from '../../../services/auth.service';
+import { CommonModule, NgClass, NgIf } from '@angular/common';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   imports: [
     RouterLink,
     CommonModule,
-
     ReactiveFormsModule,
     NgIf,
     NgClass
@@ -21,7 +20,8 @@ import {AuthService} from '../../../services/auth.service';
 export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   errorMessage: string = '';
-  returnUrl: string = '/dashboard'; // Default return URL
+  returnUrl: string = '/dashboard';
+  isLoading: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -37,12 +37,10 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Get return url from route parameters or default to '/'
     this.route.queryParams.subscribe(params => {
       this.returnUrl = params['returnUrl'] || '/dashboard';
     });
 
-    // Check if there are stored credentials if remember me was previously checked
     const storedEmail = localStorage.getItem('rememberedEmail');
     if (storedEmail) {
       this.loginForm.patchValue({
@@ -54,19 +52,23 @@ export class LoginComponent implements OnInit {
 
   onSubmit(): void {
     if (this.loginForm.valid) {
+      this.isLoading = true;
+      this.errorMessage = '';
+
       const { email, password, rememberMe } = this.loginForm.value;
 
-      this.authService.login(email, password).subscribe({
+      this.authService.login(email, password, rememberMe).subscribe({
         next: (response) => {
+          this.isLoading = false;
           if (rememberMe) {
             localStorage.setItem('rememberedEmail', email);
           } else {
             localStorage.removeItem('rememberedEmail');
           }
-
           this.router.navigateByUrl(this.returnUrl);
         },
         error: (error) => {
+          this.isLoading = false;
           if (error.status === 401) {
             this.errorMessage = 'Invalid email or password';
           } else {

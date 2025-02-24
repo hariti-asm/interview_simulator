@@ -6,7 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.LoginRequest;
 import ma.hariti.asmaa.wrm.simulator.dto.response.AuthResponse;
 import org.springframework.http.MediaType;
@@ -18,8 +18,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -29,22 +30,35 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        setFilterProcessesUrl("/api/v1/auth/login"); // Ensure this matches your frontend URL
     }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
         try {
-            LoginRequest loginRequest = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
+            // Log the incoming request body for debugging
+            String requestBody = request.getReader().lines().collect(Collectors.joining());
+            log.debug("Received login request body: {}", requestBody);
+
+            // Parse the request
+            LoginRequest loginRequest = objectMapper.readValue(requestBody, LoginRequest.class);
+
+            // Store the full request for later use
             request.setAttribute("loginRequest", loginRequest);
 
+            // Create authentication token
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     loginRequest.getEmail(),
                     loginRequest.getPassword()
             );
 
+            // Set details from the request
+            setDetails(request, authToken);
+
             return authenticationManager.authenticate(authToken);
         } catch (IOException e) {
+            log.error("Failed to parse authentication request", e);
             throw new RuntimeException("Failed to parse authentication request", e);
         }
     }

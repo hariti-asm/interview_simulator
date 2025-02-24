@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { ForgotPasswordRequest } from '../models/forgot-password-request';
 import { ResetPasswordRequest } from '../models/reset-password-request';
 import {AuthResponse} from '../models/auth-response';
 import {LoginRequest} from '../models/login-request';
 import {Role} from '../models/role.enum';
+import {RegisterRequest} from '../models/register-request';
 
 @Injectable({
   providedIn: 'root'
@@ -15,29 +16,40 @@ export class AuthService {
 
   constructor(private http: HttpClient) { }
 
-  login(email: string, password: string): Observable<AuthResponse> {
-    const request: LoginRequest = { email, password };
-    return this.http.post<AuthResponse>(`${this.baseUrl}/login`, request)
-      .pipe(
-        tap(response => {
-          if (response.token) {
-            this.saveToken(response.token);
-          }
-        })
-      );
+  login(email: string, password: string, rememberMe: boolean): Observable<AuthResponse> {
+    const loginRequest: LoginRequest = {
+      email,
+      password,
+      rememberMe
+    };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      }),
+      withCredentials: true
+    };
+
+    return this.http.post<AuthResponse>(
+      `${this.baseUrl}/login`,
+      loginRequest,
+      httpOptions
+    ).pipe(
+      tap(response => {
+        if (response.token) {
+          this.saveToken(response.token);
+        }
+      })
+    );
+  }
+  register(request: RegisterRequest): Observable<any> {
+    return this.http.post(`${this.baseUrl}/register`, request, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
   }
 
-  register(name: string, email: string, password: string, role: Role): Observable<AuthResponse> {
-    const request: { password: string; role: Role; name: string; email: string } = { name, email, password, role };
-    return this.http.post<AuthResponse>(`${this.baseUrl}/register`, request)
-      .pipe(
-        tap(response => {
-          if (response.token) {
-            this.saveToken(response.token);
-          }
-        })
-      );
-  }
 
   logout(): void {
     this.removeToken();
