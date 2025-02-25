@@ -6,15 +6,14 @@ import { HttpClientModule } from '@angular/common/http';
 import { InterviewSessionDTO } from '../../models/interview-sessiondto';
 import { PerformanceData } from '../../models/performance-data';
 import { AIInterviewService } from '../../services/ai-interview-service';
-// Import Chart.js annotation plugin
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 import { Chart } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import {HeaderComponent} from '../header/header.component';
+import { HeaderComponent } from '../header/header.component';
 
-// Register the annotation plugin
 Chart.register(annotationPlugin);
 
-// Define interfaces for performance data types
 interface PerformanceTrendItem {
   month: string;
   score: number;
@@ -36,7 +35,6 @@ export class DashboardComponent implements OnInit {
 
   performanceData: {month: string, score: number}[] = [];
 
-  // Recent interviews data
   recentInterviews: {
     position: string,
     company: string,
@@ -45,10 +43,8 @@ export class DashboardComponent implements OnInit {
     status: string
   }[] = [];
 
-  // Interview sessions from database
   interviewSessions: InterviewSessionDTO[] = [];
 
-  // Skills data for radar chart
   skillsData: ChartData<'radar'> = {
     labels: ['Technical', 'Communication', 'Problem Solving', 'System Design', 'Leadership'],
     datasets: [
@@ -62,7 +58,6 @@ export class DashboardComponent implements OnInit {
     ]
   };
 
-  // Topic performance data for bar chart
   topicPerformanceData: ChartData<'bar'> = {
     labels: ['Algorithms', 'Database', 'System Design', 'API Design', 'Security'],
     datasets: [
@@ -75,7 +70,6 @@ export class DashboardComponent implements OnInit {
     ]
   };
 
-  // Performance improvement data
   performanceImprovementData: ChartData<'line'> = {
     labels: [],
     datasets: []
@@ -141,7 +135,6 @@ export class DashboardComponent implements OnInit {
     }
   };
 
-  // Improvement metrics
   skillImprovements: {
     skill: string,
     color: string,
@@ -149,7 +142,6 @@ export class DashboardComponent implements OnInit {
     improvement: number
   }[] = [];
 
-  // Stats cards data
   statsCards = [
     { icon: 'award', title: 'Success Rate', value: '0%', trend: '0%', color: 'blue' },
     { icon: 'brain', title: 'Total Interviews', value: '0', trend: '0', color: 'green' },
@@ -157,44 +149,83 @@ export class DashboardComponent implements OnInit {
     { icon: 'bar-chart', title: 'Best Score', value: '0%', trend: '0%', color: 'yellow' }
   ];
 
-  // Current user ID - replace with actual user authentication mechanism
-  private userId: number = 1; // Example user ID
+  private userId: number | null = null;
+  private userEmail: string | null = null;
+  isLoading: boolean = true;
+  hasError: boolean = false;
+  errorMessage: string = '';
 
-  constructor(private interviewService: AIInterviewService) {}
+  constructor(
+    private interviewService: AIInterviewService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.loadInterviewData();
+    this.checkAuthentication();
+  }
+
+  private checkAuthentication(): void {
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: '/dashboard' }
+      });
+      return;
+    }
+
+    this.authService.getUserProfile().subscribe(
+      (profile) => {
+        if (profile) {
+          this.userId = profile.id;
+          this.userEmail = profile.email;
+          console.log('Loaded user profile:', profile);
+
+          this.loadInterviewData();
+        } else {
+          this.setError('User profile not found. Please log in again.');
+        }
+      },
+      (error) => {
+        console.error('Error loading user profile:', error);
+        this.setError('Could not load user profile. Please try again later.');
+      }
+    );
   }
 
   startNewInterview(): void {
-    // Modal or navigation to interview setup page
-    console.log('Starting new interview session');
-    // Example of starting a new session using the service
-    // this.interviewService.startNewSession(
-    //   this.userId,
-    //   'Software Engineer',
-    //   'Full Stack',
-    //   'Senior'
-    // ).subscribe(session => {
-    //   // Handle navigation to interview page
-    //   console.log('New session created:', session);
-    // });
+    if (!this.userId) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    console.log('Starting new interview session for user ID:', this.userId);
+    this.router.navigate(['/interview/setup']);
   }
 
-  // Load interview data from database
   loadInterviewData(): void {
-    // Get interview sessions
+    if (!this.userId) {
+      this.setError('User not authenticated. Please log in.');
+      return;
+    }
+
+    this.isLoading = true;
+
     this.interviewService.getInterviewSessions(this.userId).subscribe(
       sessions => {
         this.interviewSessions = sessions;
+        this.isLoading = false;
 
-        // Update total interviews stat
+        if (sessions.length === 0) {
+          console.log('No interview sessions found for user');
+          this.loadSampleData();
+          return;
+        }
+
         this.statsCards[1].value = sessions.length.toString();
         this.statsCards[1].trend = '+' + (sessions.length > 0 ? 1 : 0);
 
-        // Map sessions to recent interviews
         this.recentInterviews = sessions
-          .slice(0, 5) // Get last 5 sessions
+          .slice(0, 5)
           .map((session: InterviewSessionDTO) => ({
             position: session.position,
             company: session.specialization, // Using specialization as company
@@ -203,68 +234,62 @@ export class DashboardComponent implements OnInit {
             status: session.status
           }));
 
-        // Load performance by skill data
         this.loadPerformanceBySkill();
 
-        // Load overall performance summary
         this.loadPerformanceSummary();
       },
       error => {
         console.error('Error loading interview sessions:', error);
-        // Load sample data as fallback
+        this.isLoading = false;
+        this.setError('Could not load interview data. Please try again later.');
         this.loadSampleData();
       }
     );
   }
 
-  // Load performance data by skill
   loadPerformanceBySkill(): void {
+    if (!this.userId) return;
+
     this.interviewService.getPerformanceBySkill(this.userId).subscribe(
       skillData => {
-        // Process skill data for radar chart
         this.processSkillData(skillData);
 
-        // Process skill data for improvement metrics
         this.processSkillImprovements(skillData);
 
-        // Process performance improvement chart
         this.processPerformanceImprovementData(skillData);
       },
       error => {
         console.error('Error loading skill performance data:', error);
+        this.setError('Could not load skill performance data.');
       }
     );
   }
 
-  // Load overall performance summary
   loadPerformanceSummary(): void {
+    if (!this.userId) return;
+
     this.interviewService.getOverallPerformanceData(this.userId).subscribe(
       summary => {
-        // Update success rate
         if (summary.successRate) {
           this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
           this.statsCards[0].trend = '+' + (summary.successRateChange || 0).toFixed(1) + '%';
         }
 
-        // Update topics covered
         if (summary.topicsCovered) {
           this.statsCards[2].value = summary.topicsCovered.toString();
           this.statsCards[2].trend = '+' + (summary.topicsAddedRecently || 0);
         }
 
-        // Update best score
         if (summary.bestScore) {
           this.statsCards[3].value = summary.bestScore.toFixed(1) + '%';
           this.statsCards[3].trend = '+' + (summary.bestScoreImprovement || 0).toFixed(1) + '%';
         }
 
-        // Update topic performance data
         if (summary.topicPerformance) {
           this.topicPerformanceData.labels = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
           this.topicPerformanceData.datasets[0].data = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.score);
         }
 
-        // Update performance trend
         if (summary.performanceTrend) {
           this.performanceData = summary.performanceTrend.map((item: PerformanceTrendItem) => ({
             month: item.month,
@@ -274,13 +299,12 @@ export class DashboardComponent implements OnInit {
       },
       error => {
         console.error('Error loading performance summary:', error);
+        this.setError('Could not load performance summary data.');
       }
     );
   }
 
-  // Process skill data for radar chart
   private processSkillData(skillData: PerformanceData[]): void {
-    // Get latest score for each skill
     const skills = skillData.map(skill => skill.skillName);
     const latestScores = skillData.map(skill => {
       const sortedScores = [...skill.scores].sort((a, b) =>
@@ -289,21 +313,17 @@ export class DashboardComponent implements OnInit {
       return sortedScores.length > 0 ? sortedScores[0].score : 0;
     });
 
-    // Update radar chart data
     this.skillsData.labels = skills;
     this.skillsData.datasets[0].data = latestScores;
   }
 
-  // Process skill improvements
   private processSkillImprovements(skillData: PerformanceData[]): void {
-    // Color map for skills
     const colorMap = {
       'Problem Solving': '#8B5CF6',
       'System Design': '#EC4899',
       'Communication': '#10B981',
       'Technical Knowledge': '#3B82F6',
       'Code Quality': '#F59E0B',
-      // Default colors for other skills
       'default': '#6B7280'
     };
 
@@ -325,9 +345,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Process performance improvement data for line chart
   private processPerformanceImprovementData(skillData: PerformanceData[]): void {
-    // Define interfaces for better type safety
     interface SessionScore {
       sessionId: number;
       date: string;
@@ -339,7 +357,6 @@ export class DashboardComponent implements OnInit {
       label: string;
     }
 
-    // Group sessions by date
     const sessionsMap = new Map<string, SessionMapEntry>();
 
     skillData.forEach(skill => {
@@ -357,14 +374,11 @@ export class DashboardComponent implements OnInit {
       });
     });
 
-    // Sort sessions by date
     const sortedSessions = Array.from(sessionsMap.entries())
       .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
       .map(entry => ({id: entry[0], label: entry[1].label}));
 
-    // Create datasets for each skill
     const datasets = skillData.map(skill => {
-      // Color map
       const colorMap: {[key: string]: string} = {
         'Problem Solving': '#8B5CF6',
         'System Design': '#EC4899',
@@ -375,7 +389,6 @@ export class DashboardComponent implements OnInit {
 
       const color = colorMap[skill.skillName] || '#6B7280';
 
-      // Map scores to ordered sessions
       const data = sortedSessions.map(session => {
         const score = skill.scores.find(s => s.sessionId.toString() === session.id);
         return score ? score.score : null;
@@ -385,32 +398,33 @@ export class DashboardComponent implements OnInit {
         data: data,
         label: skill.skillName,
         borderColor: color,
-        backgroundColor: color + '1A', // 10% opacity
+        backgroundColor: color + '1A',
         tension: 0.3,
         fill: false
       };
     });
 
-    // Update chart data
     this.performanceImprovementData = {
       labels: sortedSessions.map(session => session.label),
       datasets: datasets
     };
   }
 
-  // Filter interviews
   filterInterviews(): void {
     console.log('Filtering interviews');
   }
 
-  // Export interviews
   exportInterviews(): void {
     console.log('Exporting interviews');
   }
 
-  // Load sample data if database connection fails
+  private setError(message: string): void {
+    this.hasError = true;
+    this.errorMessage = message;
+    console.error(message);
+  }
+
   private loadSampleData(): void {
-    // Performance trend data
     this.performanceData = [
       { month: 'Jan', score: 75 },
       { month: 'Feb', score: 82 },
@@ -419,13 +433,11 @@ export class DashboardComponent implements OnInit {
       { month: 'May', score: 92 }
     ];
 
-    // Recent interviews data
     this.recentInterviews = [
       { position: 'Senior Developer', company: 'Tech Corp', date: '2025-02-20', score: 85, status: 'Completed' },
       { position: 'Tech Lead', company: 'Innovation Labs', date: '2025-02-15', score: 92, status: 'Completed' }
     ];
 
-    // Update stats cards
     this.statsCards = [
       { icon: 'award', title: 'Success Rate', value: '85%', trend: '+5%', color: 'blue' },
       { icon: 'brain', title: 'Total Interviews', value: '24', trend: '+2', color: 'green' },
@@ -433,13 +445,10 @@ export class DashboardComponent implements OnInit {
       { icon: 'bar-chart', title: 'Best Score', value: '92%', trend: '+8%', color: 'yellow' }
     ];
 
-    // Update skills data
     this.skillsData.datasets[0].data = [85, 90, 88, 82, 75];
 
-    // Update topic performance data
     this.topicPerformanceData.datasets[0].data = [88, 92, 75, 85, 78];
 
-    // Improvement metrics
     this.skillImprovements = [
       { skill: 'Problem Solving', color: '#8B5CF6', score: 90, improvement: 5 },
       { skill: 'System Design', color: '#EC4899', score: 85, improvement: 7 },
@@ -448,7 +457,6 @@ export class DashboardComponent implements OnInit {
       { skill: 'Code Quality', color: '#F59E0B', score: 86, improvement: 6 }
     ];
 
-    // Performance improvement data
     this.performanceImprovementData = {
       labels: ['Interview 1', 'Interview 2', 'Interview 3', 'Interview 4', 'Latest'],
       datasets: [
