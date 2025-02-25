@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.*;
 import ma.hariti.asmaa.wrm.simulator.dto.response.AuthResponse;
+import ma.hariti.asmaa.wrm.simulator.dto.response.UserProfileResponse;
 import ma.hariti.asmaa.wrm.simulator.entity.Admin;
 import ma.hariti.asmaa.wrm.simulator.entity.Candidate;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
@@ -11,11 +12,13 @@ import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
 import ma.hariti.asmaa.wrm.simulator.exception.InvalidTokenException;
 import ma.hariti.asmaa.wrm.simulator.exception.UserNotFoundException;
 import ma.hariti.asmaa.wrm.simulator.mapper.UserMapper;
+import ma.hariti.asmaa.wrm.simulator.repository.TokenRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.security.JwtService;
 import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
 import ma.hariti.asmaa.wrm.simulator.service.AuthService;
 import ma.hariti.asmaa.wrm.simulator.service.EmailService;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -39,7 +42,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final UserMapper userMapper;
-
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            JwtService jwtService,
                            UserRepository userRepository,
@@ -255,5 +257,38 @@ public class AuthServiceImpl implements AuthService {
                     .build();
             default -> throw new IllegalArgumentException("Invalid role for registration: " + request.getRole());
         };
+    }
+    @Override
+    public UserProfileResponse getUserProfile(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        return UserProfileResponse.builder()
+                .email(user.getEmail())
+                .firstName(user.getName())
+                .build();
+    }
+
+    @Override
+    public void logout(String refreshToken) {
+
+        userRepository.deleteByResetToken(refreshToken);
+
+        System.out.println("User logged out successfully. Refresh token invalidated.");
+    }
+
+
+    @Override
+    public UserProfileResponse updateUserProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        user.setName(request.getFirstName());
+
+
+        userRepository.save(user);
+
+        // Return updated profile
+        return getUserProfile(email);
     }
 }
