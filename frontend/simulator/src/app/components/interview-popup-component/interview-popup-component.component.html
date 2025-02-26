@@ -1,0 +1,109 @@
+<!-- interview-popup-component.component.html -->
+<div class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 mx-4">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">Start New Interview</h2>
+      <p class="text-gray-600 mt-1">Configure your interview session</p>
+    </div>
+
+    <form (ngSubmit)="startInterview()" #interviewForm="ngForm">
+      <!-- Position -->
+      <div class="mb-4">
+        <label for="position" class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+        <select
+          id="position"
+          name="position"
+          [(ngModel)]="interviewData.position"
+          required
+          class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled selected>Select a position</option>
+          <option value="Software Engineer">Software Engineer</option>
+          <option value="Frontend Developer">Frontend Developer</option>
+          <option value="Backend Developer">Backend Developer</option>
+          <option value="Full Stack Developer">Full Stack Developer</option>
+          <option value="DevOps Engineer">DevOps Engineer</option>
+          <option value="Data Scientist">Data Scientist</option>
+          <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+          <option value="QA Engineer">QA Engineer</option>
+        </select>
+      </div>
+
+      <!-- Specialization -->
+      <div class="mb-4">
+        <label for="specialization" class="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+        <select
+          id="specialization"
+          name="specialization"
+          [(ngModel)]="interviewData.specialization"
+          required
+          class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled selected>Select a specialization</option>
+          <option value="Web Development">Web Development</option>
+          <option value="Mobile Development">Mobile Development</option>
+          <option value="Cloud Infrastructure">Cloud Infrastructure</option>
+          <option value="Database Systems">Database Systems</option>
+          <option value="Machine Learning">Machine Learning</option>
+          <option value="Security">Security</option>
+          <option value="UI/UX">UI/UX</option>
+          <option value="DevOps">DevOps</option>
+        </select>
+      </div>
+
+      <!-- Experience Level -->
+      <div class="mb-4">
+        <label for="experienceLevel" class="block text-sm font-medium text-gray-700 mb-1">Experience Level</label>
+        <select
+          id="experienceLevel"
+          name="experienceLevel"
+          [(ngModel)]="interviewData.experienceLevel"
+          required
+          class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled selected>Select experience level</option>
+          <option value="Junior">Junior (0-2 years)</option>
+          <option value="Mid-level">Mid-level (3-5 years)</option>
+          <option value="Senior">Senior (6+ years)</option>
+          <option value="Lead">Lead/Principal</option>
+        </select>
+      </div>
+
+      <!-- Number of Questions -->
+      <div class="mb-6">
+        <div class="flex items-center">
+          <button
+            type="button"
+            (click)="decrementQuestions()"
+            [disabled]="interviewData.questionCount <= 5"
+            class="bg-gray-100 p-2 rounded-l-lg border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+            <i class="fas fa-minus text-gray-600"></i>
+          </button>
+          <div class="flex-1 text-center py-2 border-t border-b border-gray-300 bg-gray-50">
+            {{ interviewData.questionCount }}
+          </div>
+          <button
+            type="button"
+            (click)="incrementQuestions()"
+            [disabled]="interviewData.questionCount >= 15"
+            class="bg-gray-100 p-2 rounded-r-lg border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+            <i class="fas fa-plus text-gray-600"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-4">
+        <button
+          type="button"
+          (click)="closePopup()"
+          class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          [disabled]="interviewForm.invalid"
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          Start Interview
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
