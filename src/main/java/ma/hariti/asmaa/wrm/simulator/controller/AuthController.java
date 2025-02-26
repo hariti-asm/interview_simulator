@@ -54,12 +54,17 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
     @GetMapping("/profile")
-    public ResponseEntity<UserProfileResponse> getUserProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
+    public ResponseEntity<UserProfileResponse> getUserProfile(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        System.out.println("Received Authorization Header: " + authHeader);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserProfileResponse profile = authService.getUserProfile(email);
         return ResponseEntity.ok(profile);
     }
+
 
 
     @PutMapping("/profile")

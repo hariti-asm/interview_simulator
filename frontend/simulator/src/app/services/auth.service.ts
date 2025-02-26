@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {Observable, tap, BehaviorSubject, catchError, throwError} from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, tap, BehaviorSubject, catchError, throwError, of } from 'rxjs';
 import { ForgotPasswordRequest } from '../models/forgot-password-request';
 import { ResetPasswordRequest } from '../models/reset-password-request';
-import {AuthResponse} from '../models/auth-response';
-import {LoginRequest} from '../models/login-request';
-import {RegisterRequest} from '../models/register-request';
+import { AuthResponse } from '../models/auth-response';
+import { LoginRequest } from '../models/login-request';
+import { RegisterRequest } from '../models/register-request';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +13,7 @@ import {RegisterRequest} from '../models/register-request';
 export class AuthService {
   private baseUrl = 'http://localhost:8083/api/v1/auth';
 
-  private authStateSubject = new BehaviorSubject<boolean>(this.isTokenValid());
+  authStateSubject = new BehaviorSubject<boolean>(this.isTokenValid());
   public authStateChanged = this.authStateSubject.asObservable();
 
   private userProfileSubject = new BehaviorSubject<any>(null);
@@ -21,6 +21,10 @@ export class AuthService {
 
   constructor(private http: HttpClient) {
     this.authStateSubject.next(this.isTokenValid());
+    // Try to load profile on service initialization if token exists
+    if (this.isTokenValid()) {
+      this.fetchUserProfile();
+    }
   }
 
   login(email: string, password: string, rememberMe: boolean): Observable<AuthResponse> {
@@ -45,9 +49,18 @@ export class AuthService {
       tap(response => {
         if (response.token) {
           this.saveToken(response.token);
+          // Save refresh token if available
+          if (response.refreshToken) {
+            localStorage.setItem('refresh_token', response.refreshToken);
+          }
           this.authStateSubject.next(true);
+          // After login, fetch the user profile
           this.fetchUserProfile();
         }
+      }),
+      catchError(error => {
+        console.error('Login failed:', error);
+        return throwError(error);
       })
     );
   }
@@ -63,21 +76,28 @@ export class AuthService {
   logout(): Observable<any> {
     const refreshToken = localStorage.getItem('refresh_token');
 
+    // If no refresh token, just clear local storage
+    if (!refreshToken) {
+      this.clearAuthData();
+      return of(null);
+    }
+
     return this.http.post(`${this.baseUrl}/logout`, { refreshToken }).pipe(
       tap(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        this.authStateSubject.next(false);
-        this.userProfileSubject.next(null);
+        this.clearAuthData();
       }),
       catchError(error => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        this.authStateSubject.next(false);
-        this.userProfileSubject.next(null);
+        this.clearAuthData();
         return throwError(error);
       })
     );
+  }
+
+  private clearAuthData(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    this.authStateSubject.next(false);
+    this.userProfileSubject.next(null);
   }
 
   isAuthenticated(): boolean {
@@ -88,6 +108,14 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return false;
     return !this.isTokenExpired();
+  }
+
+  getAuthHeaders(): HttpHeaders {
+    const token = this.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
   }
 
   forgotPassword(email: string): Observable<void> {
@@ -125,9 +153,17 @@ export class AuthService {
   }
 
   getUserProfile(): Observable<any> {
+    // If we already have a profile, return it
+    if (this.userProfileSubject.value) {
+      return this.userProfile;
+    }
+
+    // Otherwise, fetch it
+    this.fetchUserProfile();
     return this.userProfile;
   }
 
+// Modify your fetchUserProfile method in auth.service.ts
   private fetchUserProfile(): void {
     const token = this.getToken();
     if (!token) {
@@ -135,44 +171,40 @@ export class AuthService {
       return;
     }
 
-    const httpOptions = {
-      headers: new HttpHeaders({
-        'Authorization': `Bearer ${token}`
-      })
-    };
+    console.log('Fetching user profile with token:', token.substring(0, 20) + '...');
 
-    this.http.get<any>(`${this.baseUrl}/profile`, httpOptions)
-      .subscribe(
-        (profile) => {
+    // Use the HttpClient with explicit headers
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    // Log the full request to debug
+    console.log('Making request to:', `${this.baseUrl}/profile`);
+    console.log('With headers:', headers);
+
+    this.http.get<any>(`${this.baseUrl}/profile`, { headers, withCredentials: true })
+      .subscribe({
+        next: (profile) => {
+          console.log('Profile fetched successfully:', profile);
           this.userProfileSubject.next(profile);
         },
-        (error) => {
+        error: (error) => {
           console.error('Error fetching user profile:', error);
+          // Log more details about the error
+          console.error('Status:', error.status);
+          console.error('Status Text:', error.statusText);
+          console.error('Error Body:', error.error);
+
           if (error.status === 401) {
-            this.removeToken();
-            this.authStateSubject.next(false);
-            this.userProfileSubject.next(null);
+            console.log('Unauthorized. Clearing auth data.');
+            this.clearAuthData();
           }
         }
-      );
+      });
   }
   updateUserProfile(profileData: any): Observable<any> {
-    const token = this.getToken();
-    if (!token) {
-      return new Observable(observer => {
-        observer.error('Not authenticated');
-        observer.complete();
-      });
-    }
-
-    const httpOptions = {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      })
-    };
-
-    return this.http.put<any>(`${this.baseUrl}/profile`, profileData, httpOptions)
+    return this.http.put<any>(`${this.baseUrl}/profile`, profileData)
       .pipe(
         tap(response => {
           this.userProfileSubject.next({
@@ -181,4 +213,5 @@ export class AuthService {
           });
         })
       );
-}}
+  }
+}

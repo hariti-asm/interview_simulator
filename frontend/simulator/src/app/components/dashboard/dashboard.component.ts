@@ -167,41 +167,57 @@ export class DashboardComponent implements OnInit {
 
   private checkAuthentication(): void {
     if (!this.authService.isAuthenticated()) {
+      console.log('Not authenticated, redirecting to login');
       this.router.navigate(['/login'], {
         queryParams: { returnUrl: '/dashboard' }
       });
       return;
     }
 
+    this.authService.getUserProfile().subscribe({
+      next: (profile) => {
+        if (profile) {
+          this.userId = profile.id;
+          this.userEmail = profile.email;
+          console.log('Successfully loaded user profile:', profile);
+          this.loadInterviewData();
+        } else {
+          console.log('Profile is null, waiting for it to load...');
+          // No need to show error yet, the profile might still be loading
+        }
+      },
+      error: (error) => {
+        console.error('Error loading user profile:', error);
+        this.setError('Could not load user profile. Please try again later.');
+      }
+    });
+  }
+
+  debugAuthState(): void {
+    console.log('Current auth state:', {
+      isAuthenticated: this.authService.isAuthenticated(),
+      token: this.authService.getToken() ? 'Token exists' : 'No token',
+      tokenExpired: this.authService.isTokenExpired()
+    });
+  }
+  startNewInterview(): void {
     this.authService.getUserProfile().subscribe(
       (profile) => {
         if (profile) {
           this.userId = profile.id;
-          this.userEmail = profile.email;
-          console.log('Loaded user profile:', profile);
-
-          this.loadInterviewData();
+          console.log('Navigating to interview setup with user ID:', this.userId);
+          this.router.navigate(['/interview/setup']);
         } else {
-          this.setError('User profile not found. Please log in again.');
+          console.log('No profile found, redirecting to login');
+          this.router.navigate(['/login']);
         }
       },
       (error) => {
-        console.error('Error loading user profile:', error);
-        this.setError('Could not load user profile. Please try again later.');
+        console.error('Error loading profile:', error);
+        this.router.navigate(['/login']);
       }
     );
   }
-
-  startNewInterview(): void {
-    if (!this.userId) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    console.log('Starting new interview session for user ID:', this.userId);
-    this.router.navigate(['/interview/setup']);
-  }
-
   loadInterviewData(): void {
     if (!this.userId) {
       this.setError('User not authenticated. Please log in.');

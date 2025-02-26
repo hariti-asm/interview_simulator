@@ -8,6 +8,7 @@ import {AuthGuard} from './models/guards/auth-guard.guard';
 import {RegisterComponent} from './components/auth/register/register.component';
 import {HomeComponent} from './components/home/home.component';
 import {ProfileComponent} from './components/profile/profile.component';
+import {InterviewPopupComponent} from './components/interview-popup-component/interview-popup-component.component';
 
 export const routes: Routes = [
 
@@ -22,6 +23,7 @@ export const routes: Routes = [
   },
   { path: 'login', component: LoginComponent },
   { path: 'profile', component:ProfileComponent},
+  { path: 'interview/setup', component: InterviewPopupComponent },
 
   { path: '**', redirectTo: '' }
 ];

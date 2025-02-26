@@ -14,19 +14,16 @@ export class AIInterviewService {
 
   constructor(private http: HttpClient) {}
 
-  startNewSession(
-    userId: number,
-    position: string,
-    specialization: string,
-    experienceLevel: string
-  ): Observable<InterviewSessionDTO> {
-    return this.http.post<InterviewSessionDTO>(`${this.apiUrl}/sessions/new`, {
-      userId,
-      position,
-      specialization,
-      experienceLevel
-    });
+  startNewSession(sessionData: {
+    userId: number;
+    position: string;
+    specialization: string;
+    experienceLevel: string;
+    questionCount: number;
+  }): Observable<InterviewSessionDTO> {
+    return this.http.post<InterviewSessionDTO>(`${this.apiUrl}/sessions/new`, sessionData);
   }
+
 
   processAnswer(
     userId: number,
