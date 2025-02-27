@@ -66,24 +66,39 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                             FilterChain chain, Authentication authResult) throws IOException {
-        UserDetailsImpl userDetails = (UserDetailsImpl) authResult.getPrincipal();
-        LoginRequest loginRequest = (LoginRequest) request.getAttribute("loginRequest");
-        boolean rememberMe = loginRequest != null && loginRequest.isRememberMe();
+        Object principal = authResult.getPrincipal();
 
-        String token = jwtService.generateToken(userDetails, rememberMe);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
-        String rememberMeToken = rememberMe ? jwtService.generateRememberMeToken(userDetails) : null;
+        // Log the class type of the principal to verify it is of type UserDetailsImpl
+        log.info("Principal class type: {}", principal.getClass().getName());
 
-        AuthResponse authResponse = AuthResponse.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .rememberMeToken(rememberMeToken)
-                .user(userDetails.toUserResponse())
-                .build();
+        if (principal instanceof UserDetailsImpl) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) principal;
 
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(), authResponse);
+            // Log user details to confirm
+            log.info("Authenticated user: {}", userDetails.getUsername());
+
+            LoginRequest loginRequest = (LoginRequest) request.getAttribute("loginRequest");
+            boolean rememberMe = loginRequest != null && loginRequest.isRememberMe();
+
+            String token = jwtService.generateToken(userDetails, rememberMe);
+            String refreshToken = jwtService.generateRefreshToken(userDetails);
+            String rememberMeToken = rememberMe ? jwtService.generateRememberMeToken(userDetails) : null;
+
+            AuthResponse authResponse = AuthResponse.builder()
+                    .token(token)
+                    .refreshToken(refreshToken)
+                    .rememberMeToken(rememberMeToken)
+                    .user(userDetails.toUserResponse())
+                    .build();
+
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            objectMapper.writeValue(response.getOutputStream(), authResponse);
+        } else {
+            log.error("Unexpected principal type: {}", principal.getClass().getName());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unexpected authentication principal type");
+        }
     }
+
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,

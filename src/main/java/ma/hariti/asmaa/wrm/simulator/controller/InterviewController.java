@@ -2,31 +2,72 @@ package ma.hariti.asmaa.wrm.simulator.controller;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.*;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
+import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
 import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.AIInterviewServiceDefault;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/interview")
 @RequiredArgsConstructor
+@Slf4j
 public class InterviewController {
 
     private final AIInterviewServiceDefault aiInterviewService;
     private final UserRepository userRepository;
+
     @PostMapping("/start")
     public InterviewSessionDTO startNewSession(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam String position,
             @RequestParam String specialization,
             @RequestParam String experienceLevel
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return aiInterviewService.startNewSession(user.getId(), position, specialization, experienceLevel);
+        log.info("Starting new interview session with position={}, specialization={}, experienceLevel={}",
+                position, specialization, experienceLevel);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+            log.error("Authentication is null");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        log.info("Authentication name: {}", authentication.getName());
+        log.info("Authentication principal type: {}",
+                authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null");
+
+        Long userId = null;
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetailsImpl) {
+            userId = ((UserDetailsImpl) principal).getId();
+            log.info("User ID from UserDetailsImpl: {}", userId);
+        } else {
+            log.error("Unsupported authentication principal type: {}",
+                    principal != null ? principal.getClass().getName() : "null");
+            throw new IllegalStateException("Unsupported authentication principal type");
+        }
+
+        if (userId == null) {
+            log.error("User ID is null");
+            throw new IllegalStateException("User ID is null");
+        }
+
+        log.info("Found user ID: {}", userId);
+
+        InterviewSessionDTO session = aiInterviewService.startNewSession(
+                userId, position, specialization, experienceLevel);
+
+        log.info("Created new interview session with id: {}", session.getId());
+
+        return session;
     }
 
     @PostMapping("/process-answer")

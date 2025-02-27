@@ -3,7 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { InterviewService } from '../../services/interview.service'; // Update to use your actual interview service
+import { InterviewService } from '../../services/interview.service';
+import {HttpHeaders} from '@angular/common/http';
 
 interface InterviewSetupData {
   position: string;
@@ -28,22 +29,30 @@ export class InterviewPopupComponent implements OnInit {
 
   errorMessage: string = '';
   isLoading: boolean = false;
+  currentUser: any = null;
 
   constructor(
     private router: Router,
-    private interviewService: InterviewService, // Use the correct service
+    private interviewService: InterviewService,
     private authService: AuthService
   ) {}
 
   ngOnInit(): void {
     this.checkAuthentication();
+    this.authService.userProfile.subscribe(profile => {
+      this.currentUser = profile;
+      console.log('Current user:', this.currentUser);
+    });
+    console.log('Auth token:', this.authService.getToken());
   }
 
   private checkAuthentication(): void {
     if (!this.authService.isAuthenticated()) {
+      console.log('User not authenticated, redirecting to login');
       this.router.navigate(['/login']);
       return;
     }
+    console.log('User is authenticated');
   }
 
   incrementQuestions(): void {
@@ -59,26 +68,27 @@ export class InterviewPopupComponent implements OnInit {
   }
 
   startNewInterview(): void {
-    if (!this.validateForm()) {
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
 
     this.interviewService.startInterview(
       this.interviewData.position,
       this.interviewData.specialization,
-      this.interviewData.experienceLevel
+      this.interviewData.experienceLevel,
+      { headers }
     ).subscribe({
       next: (sessionData) => {
         this.isLoading = false;
+        console.log('Interview started successfully:', sessionData);
         this.router.navigate(['/interview/session', sessionData.id]);
       },
       error: (error) => {
         this.isLoading = false;
         console.error('Error starting interview:', error);
-        this.errorMessage = 'Failed to start interview. Please try again.';
+        if (error.error && error.error.error) {
+          this.errorMessage = `Failed to start interview: ${error.error.error}`;
+        } else {
+          this.errorMessage = 'Failed to start interview. Please try again.';
+        }
       }
     });
   }

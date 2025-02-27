@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-
 @Getter
 public class UserDetailsImpl implements UserDetails {
     private final Long id;
@@ -21,14 +20,12 @@ public class UserDetailsImpl implements UserDetails {
     private final Role role;
     private final String firstName;
 
-
     public UserDetailsImpl(User user) {
         this.id = user.getId();
         this.email = user.getEmail();
         this.password = user.getPassword();
         this.role = user.getRole();
         this.firstName = user.getName();
-
     }
 
     @Override
@@ -61,7 +58,10 @@ public class UserDetailsImpl implements UserDetails {
         return true;
     }
 
-
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
     public UserResponse toUserResponse() {
         return UserResponse.builder()
                 .id(id)
@@ -70,4 +70,5 @@ public class UserDetailsImpl implements UserDetails {
                 .role(role)
                 .build();
     }
+
 }

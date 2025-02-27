@@ -98,6 +98,7 @@ export class ProfileComponent implements OnInit {
     this.authService.updateUserProfile(updatedProfile).subscribe(
       (response) => {
         this.successMessage = 'Profile updated successfully';
+        // Update the local profile with the response
         this.userProfile = response;
         this.isSaving = false;
       },

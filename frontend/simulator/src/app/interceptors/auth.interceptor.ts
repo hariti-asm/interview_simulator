@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+
   constructor(
     private authService: AuthService,
     private router: Router
@@ -22,25 +23,24 @@ export class AuthInterceptor implements HttpInterceptor {
     const token = this.authService.getToken();
 
     if (token) {
-
-      request = request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
+      const authReq = request.clone({
+        headers: request.headers.set('Authorization', `Bearer ${token}`)
       });
+
       console.log('Adding auth token to request:', request.url);
+
+      return next.handle(authReq).pipe(
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 401) {
+            console.log('401 Unauthorized error - redirecting to login');
+            this.authService.logout();
+            this.router.navigate(['/login']);
+          }
+          return throwError(() => error);
+        })
+      );
     }
 
-    return next.handle(request).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          console.log('Unauthorized request. Redirecting to login.');
-          this.authService.removeToken();
-          this.authService.authStateSubject.next(false);
-          this.router.navigate(['/login']);
-        }
-        return throwError(error);
-      })
-    );
+    return next.handle(request);
   }
 }
