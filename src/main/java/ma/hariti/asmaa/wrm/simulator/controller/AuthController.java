@@ -62,6 +62,9 @@ public class AuthController {
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserProfileResponse profile = authService.getUserProfile(email);
+
+        System.out.println("Returning profile: " + profile);
+
         return ResponseEntity.ok(profile);
     }
 

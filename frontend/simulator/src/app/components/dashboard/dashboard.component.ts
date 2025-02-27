@@ -5,12 +5,12 @@ import { ChartConfiguration, ChartData } from 'chart.js';
 import { HttpClientModule } from '@angular/common/http';
 import { InterviewSessionDTO } from '../../models/interview-sessiondto';
 import { PerformanceData } from '../../models/performance-data';
-import { AIInterviewService } from '../../services/ai-interview-service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { Chart } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { HeaderComponent } from '../header/header.component';
+import {InterviewService} from '../../services/interview.service';
 
 Chart.register(annotationPlugin);
 
@@ -156,7 +156,7 @@ export class DashboardComponent implements OnInit {
   errorMessage: string = '';
 
   constructor(
-    private interviewService: AIInterviewService,
+    private interviewService: InterviewService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -166,11 +166,13 @@ export class DashboardComponent implements OnInit {
   }
 
   private checkAuthentication(): void {
+    // 1. Debug what's happening
+    console.log('Auth check - isAuthenticated:', this.authService.isAuthenticated());
+    console.log('Auth check - token exists:', !!this.authService.getToken());
+
     if (!this.authService.isAuthenticated()) {
-      console.log('Not authenticated, redirecting to login');
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: '/dashboard' }
-      });
+      console.log('Not authenticated according to auth service, redirecting to login');
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -178,21 +180,25 @@ export class DashboardComponent implements OnInit {
       next: (profile) => {
         if (profile) {
           this.userId = profile.id;
-          this.userEmail = profile.email;
-          console.log('Successfully loaded user profile:', profile);
-          this.loadInterviewData();
+          console.log('Profile loaded successfully:', profile);
         } else {
-          console.log('Profile is null, waiting for it to load...');
-          // No need to show error yet, the profile might still be loading
+          console.log('Profile is null, redirecting to login');
+          this.router.navigate(['/login']);
         }
       },
       error: (error) => {
         console.error('Error loading user profile:', error);
-        this.setError('Could not load user profile. Please try again later.');
+
+        // Instead of immediately redirecting, check if token is expired
+        if (this.authService.isTokenExpired()) {
+          console.log('Token is expired, redirecting to login');
+          this.router.navigate(['/login']);
+        } else {
+          console.log('Profile error but token valid, continuing with default userId');
+        }
       }
     });
   }
-
   debugAuthState(): void {
     console.log('Current auth state:', {
       isAuthenticated: this.authService.isAuthenticated(),

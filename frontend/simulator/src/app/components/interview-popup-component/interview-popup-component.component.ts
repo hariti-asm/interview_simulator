@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { AIInterviewService } from '../../services/ai-interview-service';
 import { AuthService } from '../../services/auth.service';
+import { InterviewService } from '../../services/interview.service'; // Update to use your actual interview service
 
 interface InterviewSetupData {
   position: string;
@@ -26,11 +26,12 @@ export class InterviewPopupComponent implements OnInit {
     questionCount: 10
   };
 
-  private userId: number | null = null;
+  errorMessage: string = '';
+  isLoading: boolean = false;
 
   constructor(
     private router: Router,
-    private interviewService: AIInterviewService,
+    private interviewService: InterviewService, // Use the correct service
     private authService: AuthService
   ) {}
 
@@ -43,21 +44,6 @@ export class InterviewPopupComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-
-    this.authService.getUserProfile().subscribe(
-      (profile) => {
-        if (profile) {
-          this.userId = profile.id;
-        } else {
-          // Handle missing profile
-          this.router.navigate(['/login']);
-        }
-      },
-      (error) => {
-        console.error('Error loading user profile:', error);
-        this.router.navigate(['/login']);
-      }
-    );
   }
 
   incrementQuestions(): void {
@@ -72,29 +58,45 @@ export class InterviewPopupComponent implements OnInit {
     }
   }
 
-  startInterview(): void {
-    if (!this.userId) {
-      this.router.navigate(['/login']);
+  startNewInterview(): void {
+    if (!this.validateForm()) {
       return;
     }
 
-    // Create a new interview session
-    this.interviewService.startNewSession({
-      userId: this.userId,
-      position: this.interviewData.position,
-      specialization: this.interviewData.specialization,
-      experienceLevel: this.interviewData.experienceLevel,
-      questionCount: this.interviewData.questionCount
-    }).subscribe(
-      (session) => {
-        // Navigate to the interview room with the session ID
-        this.router.navigate(['/interview/room', session.id]);
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.interviewService.startInterview(
+      this.interviewData.position,
+      this.interviewData.specialization,
+      this.interviewData.experienceLevel
+    ).subscribe({
+      next: (sessionData) => {
+        this.isLoading = false;
+        this.router.navigate(['/interview/session', sessionData.id]);
       },
-      (error) => {
-        console.error('Error creating interview session:', error);
-        // Here you'd typically show an error message to the user
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error starting interview:', error);
+        this.errorMessage = 'Failed to start interview. Please try again.';
       }
-    );
+    });
+  }
+
+  private validateForm(): boolean {
+    if (!this.interviewData.position) {
+      this.errorMessage = 'Please specify a position';
+      return false;
+    }
+    if (!this.interviewData.specialization) {
+      this.errorMessage = 'Please specify a specialization';
+      return false;
+    }
+    if (!this.interviewData.experienceLevel) {
+      this.errorMessage = 'Please specify an experience level';
+      return false;
+    }
+    return true;
   }
 
   closePopup(): void {

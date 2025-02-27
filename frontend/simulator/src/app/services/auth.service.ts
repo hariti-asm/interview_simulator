@@ -84,7 +84,8 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return this.isTokenValid();
+    const token = this.getToken();
+    return !!token && !this.isTokenExpired();
   }
 
   private isTokenValid(): boolean {
@@ -133,6 +134,7 @@ export class AuthService {
       return true;
     }
   }
+
 
   getUserProfile(): Observable<any> {
     if (this.userProfileSubject.value) {

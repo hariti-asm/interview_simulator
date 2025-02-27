@@ -264,6 +264,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
         return UserProfileResponse.builder()
+                .id(user.getId())
                 .email(user.getEmail())
                 .firstName(user.getName())
                 .build();
