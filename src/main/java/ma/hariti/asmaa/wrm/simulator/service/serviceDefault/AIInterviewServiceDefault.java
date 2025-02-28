@@ -120,4 +120,17 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         log.info("Generated and saved question with ID: {} for user: {}", savedQuestion.getId(), userId);
         return questionMapper.toDTO(savedQuestion);
     }
+
+    @Override
+    @Transactional
+    public void deleteInterview(Long userId, Long sessionId) {
+        log.info("Deleting interview session {} for user {}", sessionId, userId);
+
+        InterviewSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Interview session not found"));
+
+        sessionRepository.delete(session);
+
+        log.info("Interview session {} deleted successfully", sessionId);
+    }
 }

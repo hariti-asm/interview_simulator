@@ -28,7 +28,6 @@ export class InterviewService {
     };
   }
 
-
   startInterview(position: string, specialization: string, experienceLevel: string, userId?: {
     headers: HttpHeaders
   }): Observable<any> {
@@ -51,6 +50,7 @@ export class InterviewService {
       params
     });
   }
+
   getNextQuestion(sessionId: number): Observable<QuestionDTO> {
     const params = new HttpParams()
       .set('sessionId', sessionId.toString());
@@ -77,12 +77,20 @@ export class InterviewService {
     return this.http.get(`${this.apiUrl}/recent`, this.getAuthHeaders());
   }
 
+  getUserInterviews(userId: number): Observable<InterviewSessionDTO[]> {
+    return this.http.get<InterviewSessionDTO[]>(`${this.apiUrl}/${userId}/interviews`, this.getAuthHeaders());
+  }
+
   getInterviewSessions(userId: number): Observable<InterviewSessionDTO[]> {
     const params = new HttpParams().set('userId', userId.toString());
     return this.http.get<InterviewSessionDTO[]>(`${this.apiUrl}/sessions`, {
       ...this.getAuthHeaders(),
       params
     });
+  }
+
+  getUserPerformance(userId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${userId}/performance`, this.getAuthHeaders());
   }
 
   getPerformanceBySkill(userId: number): Observable<PerformanceData[]> {
@@ -122,5 +130,9 @@ export class InterviewService {
 
   getInterviewFeedback(sessionId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/session/${sessionId}/feedback`, this.getAuthHeaders());
+  }
+
+  deleteInterview(sessionId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`, this.getAuthHeaders());
   }
 }

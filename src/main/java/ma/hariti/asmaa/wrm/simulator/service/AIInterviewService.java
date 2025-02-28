@@ -8,4 +8,5 @@ public interface AIInterviewService {
     AnswerDTO processAnswer( Long userId, Long sessionId, Long questionId, String answer);
 
     QuestionDTO generateNextQuestion( Long userId,Long sessionId);
+    void deleteInterview(Long userId, Long sessionId);
 }

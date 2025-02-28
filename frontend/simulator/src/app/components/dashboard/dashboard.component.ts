@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 import { Chart } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { HeaderComponent } from '../header/header.component';
-import {InterviewService} from '../../services/interview.service';
+import { InterviewService } from '../../services/interview.service';
 
 Chart.register(annotationPlugin);
 
@@ -36,6 +36,7 @@ export class DashboardComponent implements OnInit {
   performanceData: {month: string, score: number}[] = [];
 
   recentInterviews: {
+    id: number,
     position: string,
     company: string,
     date: string,
@@ -166,7 +167,6 @@ export class DashboardComponent implements OnInit {
   }
 
   private checkAuthentication(): void {
-    // 1. Debug what's happening
     console.log('Auth check - isAuthenticated:', this.authService.isAuthenticated());
     console.log('Auth check - token exists:', !!this.authService.getToken());
 
@@ -181,6 +181,7 @@ export class DashboardComponent implements OnInit {
         if (profile) {
           this.userId = profile.id;
           console.log('Profile loaded successfully:', profile);
+          this.loadInterviewData();
         } else {
           console.log('Profile is null, redirecting to login');
           this.router.navigate(['/login']);
@@ -189,23 +190,17 @@ export class DashboardComponent implements OnInit {
       error: (error) => {
         console.error('Error loading user profile:', error);
 
-        // Instead of immediately redirecting, check if token is expired
         if (this.authService.isTokenExpired()) {
           console.log('Token is expired, redirecting to login');
           this.router.navigate(['/login']);
         } else {
           console.log('Profile error but token valid, continuing with default userId');
+          this.loadSampleData();
         }
       }
     });
   }
-  debugAuthState(): void {
-    console.log('Current auth state:', {
-      isAuthenticated: this.authService.isAuthenticated(),
-      token: this.authService.getToken() ? 'Token exists' : 'No token',
-      tokenExpired: this.authService.isTokenExpired()
-    });
-  }
+
   startNewInterview(): void {
     this.authService.getUserProfile().subscribe(
       (profile) => {
@@ -224,6 +219,7 @@ export class DashboardComponent implements OnInit {
       }
     );
   }
+
   loadInterviewData(): void {
     if (!this.userId) {
       this.setError('User not authenticated. Please log in.');
@@ -232,7 +228,8 @@ export class DashboardComponent implements OnInit {
 
     this.isLoading = true;
 
-    this.interviewService.getInterviewSessions(this.userId).subscribe(
+    // Use the new getUserInterviews method to fetch interviews for the authenticated user
+    this.interviewService.getUserInterviews(this.userId).subscribe(
       sessions => {
         this.interviewSessions = sessions;
         this.isLoading = false;
@@ -249,16 +246,16 @@ export class DashboardComponent implements OnInit {
         this.recentInterviews = sessions
           .slice(0, 5)
           .map((session: InterviewSessionDTO) => ({
+            id:session.id,
             position: session.position,
-            company: session.specialization, // Using specialization as company
+            company: session.specialization,
             date: new Date(session.startTime).toISOString().split('T')[0],
             score: session.overallScore || 0,
             status: session.status
           }));
+        console.log("interviews of", this.recentInterviews);
 
-        this.loadPerformanceBySkill();
-
-        this.loadPerformanceSummary();
+        this.loadPerformanceData();
       },
       error => {
         console.error('Error loading interview sessions:', error);
@@ -269,15 +266,71 @@ export class DashboardComponent implements OnInit {
     );
   }
 
+  loadPerformanceData(): void {
+    if (!this.userId) return;
+
+    this.interviewService.getUserPerformance(this.userId).subscribe(
+      performance => {
+        console.log('Performance data:', performance);
+
+        if (performance.skills) {
+          this.processSkillData(performance.skills);
+          this.processSkillImprovements(performance.skills);
+          this.processPerformanceImprovementData(performance.skills);
+        }
+
+        if (performance.summary) {
+          this.updatePerformanceSummary(performance.summary);
+        }
+
+        if (performance.topicPerformance) {
+          this.topicPerformanceData.labels = performance.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
+          this.topicPerformanceData.datasets[0].data = performance.topicPerformance.map((topic: TopicPerformanceItem) => topic.score);
+        }
+
+        if (performance.trend) {
+          this.performanceData = performance.trend.map((item: PerformanceTrendItem) => ({
+            month: item.month,
+            score: item.score
+          }));
+        }
+      },
+      error => {
+        console.error('Error loading performance data:', error);
+        this.setError('Could not load performance data.');
+        this.loadSampleData();
+      }
+    );
+  }
+  viewInterviewDetails(interviewId: number) {
+    console.log("Viewing details for interview ID:", interviewId);
+  }
+
+  deleteInterview(sessionId: number) {
+    if (confirm("Are you sure you want to delete this interview?")) {
+      this.interviewService.deleteInterview(sessionId).subscribe({
+        next: (response) => {
+          console.log(`Interview session ${sessionId} deleted successfully.`);
+          // Refresh the interview list or update the UI here
+        },
+        error: (err) => {
+          console.error('Error deleting interview session:', err);
+          console.error('Status:', err.status);
+          console.error('Message:', err.message);
+          console.error('Error details:', err.error);
+          // Display an error message to the user
+        }
+      });
+    }
+  }
+
   loadPerformanceBySkill(): void {
     if (!this.userId) return;
 
     this.interviewService.getPerformanceBySkill(this.userId).subscribe(
       skillData => {
         this.processSkillData(skillData);
-
         this.processSkillImprovements(skillData);
-
         this.processPerformanceImprovementData(skillData);
       },
       error => {
@@ -287,25 +340,29 @@ export class DashboardComponent implements OnInit {
     );
   }
 
+  updatePerformanceSummary(summary: any): void {
+    if (summary.successRate !== undefined) {
+      this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
+      this.statsCards[0].trend = '+' + (summary.successRateChange || 0).toFixed(1) + '%';
+    }
+
+    if (summary.topicsCovered !== undefined) {
+      this.statsCards[2].value = summary.topicsCovered.toString();
+      this.statsCards[2].trend = '+' + (summary.topicsAddedRecently || 0);
+    }
+
+    if (summary.bestScore !== undefined) {
+      this.statsCards[3].value = summary.bestScore.toFixed(1) + '%';
+      this.statsCards[3].trend = '+' + (summary.bestScoreImprovement || 0).toFixed(1) + '%';
+    }
+  }
+
   loadPerformanceSummary(): void {
     if (!this.userId) return;
 
     this.interviewService.getOverallPerformanceData(this.userId).subscribe(
       summary => {
-        if (summary.successRate) {
-          this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
-          this.statsCards[0].trend = '+' + (summary.successRateChange || 0).toFixed(1) + '%';
-        }
-
-        if (summary.topicsCovered) {
-          this.statsCards[2].value = summary.topicsCovered.toString();
-          this.statsCards[2].trend = '+' + (summary.topicsAddedRecently || 0);
-        }
-
-        if (summary.bestScore) {
-          this.statsCards[3].value = summary.bestScore.toFixed(1) + '%';
-          this.statsCards[3].trend = '+' + (summary.bestScoreImprovement || 0).toFixed(1) + '%';
-        }
+        this.updatePerformanceSummary(summary);
 
         if (summary.topicPerformance) {
           this.topicPerformanceData.labels = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
@@ -455,10 +512,7 @@ export class DashboardComponent implements OnInit {
       { month: 'May', score: 92 }
     ];
 
-    this.recentInterviews = [
-      { position: 'Senior Developer', company: 'Tech Corp', date: '2025-02-20', score: 85, status: 'Completed' },
-      { position: 'Tech Lead', company: 'Innovation Labs', date: '2025-02-15', score: 92, status: 'Completed' }
-    ];
+
 
     this.statsCards = [
       { icon: 'award', title: 'Success Rate', value: '85%', trend: '+5%', color: 'blue' },

@@ -14,6 +14,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/interview")
 @RequiredArgsConstructor
@@ -91,4 +93,43 @@ public class InterviewController {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return aiInterviewService.generateNextQuestion(user.getId(), sessionId);
     }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    public void deleteInterview(@PathVariable Long sessionId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+            log.error("Authentication is null");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        log.info("Authentication name: {}", authentication.getName());
+        log.info("Authentication principal type: {}",
+                authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null");
+
+        Long userId = null;
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetailsImpl) {
+            userId = ((UserDetailsImpl) principal).getId();
+            log.info("User ID from UserDetailsImpl: {}", userId);
+        } else {
+            log.error("Unsupported authentication principal type: {}",
+                    principal != null ? principal.getClass().getName() : "null");
+            throw new IllegalStateException("Unsupported authentication principal type");
+        }
+
+        if (userId == null) {
+            log.error("User ID is null");
+            throw new IllegalStateException("User ID is null");
+        }
+
+        log.info("Deleting interview session {} for user {}", sessionId, userId);
+
+        aiInterviewService.deleteInterview(userId, sessionId);
+
+        log.info("Interview session {} deleted successfully", sessionId);
+    }
+
+
 }
