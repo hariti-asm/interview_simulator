@@ -1,17 +1,18 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { InterviewSessionDTO } from '../models/interview-sessiondto';
-import { QuestionDTO } from '../models/questiondto';
-import { AnswerDTO } from '../models/answerdto';
-import { PerformanceData } from '../models/performance-data';
-import { AuthService } from './auth.service';
+import {Injectable} from '@angular/core';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
+import {Observable} from 'rxjs';
+import {InterviewSessionDTO} from '../models/interview-sessiondto';
+import {QuestionDTO} from '../models/questiondto';
+import {AnswerDTO} from '../models/answerdto';
+import {PerformanceData} from '../models/performance-data';
+import {AuthService} from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InterviewService {
   private apiUrl = "http://localhost:8083/api/interview";
+  private userUrl = "http://localhost:8083/api/users";
 
   constructor(
     private http: HttpClient,
@@ -78,7 +79,7 @@ export class InterviewService {
   }
 
   getUserInterviews(userId: number): Observable<InterviewSessionDTO[]> {
-    return this.http.get<InterviewSessionDTO[]>(`${this.apiUrl}/${userId}/interviews`, this.getAuthHeaders());
+    return this.http.get<InterviewSessionDTO[]>(`${this.userUrl}/${userId}/interviews`, this.getAuthHeaders());
   }
 
   getInterviewSessions(userId: number): Observable<InterviewSessionDTO[]> {
@@ -110,7 +111,7 @@ export class InterviewService {
   }
 
   getSessionDetails(sessionId: number): Observable<InterviewSessionDTO> {
-    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/session/${sessionId}`, this.getAuthHeaders());
+    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
   }
 
   getSessionQuestions(sessionId: number): Observable<QuestionDTO[]> {
@@ -134,5 +135,9 @@ export class InterviewService {
 
   deleteInterview(sessionId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`, this.getAuthHeaders());
+  }
+
+  getInterviewById(sessionId: number): Observable<InterviewSessionDTO> {
+    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
   }
 }

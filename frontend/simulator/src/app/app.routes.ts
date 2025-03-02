@@ -1,14 +1,14 @@
-import { Routes } from '@angular/router';
+import {Routes} from '@angular/router';
 import {LoginComponent} from './components/auth/login/login.component';
 import {TestimonialsComponent} from './components/testimonials/testimonials.component';
 import {FeaturesComponent} from './components/features/features.component';
-import {AppComponent} from './app.component';
 import {DashboardComponent} from './components/dashboard/dashboard.component';
 import {AuthGuard} from './models/guards/auth-guard.guard';
 import {RegisterComponent} from './components/auth/register/register.component';
 import {HomeComponent} from './components/home/home.component';
 import {ProfileComponent} from './components/profile/profile.component';
 import {InterviewPopupComponent} from './components/interview-popup-component/interview-popup-component.component';
+import {InterviewDetailComponent} from './components/interview-detail/interview-detail.component';
 
 export const routes: Routes = [
 
@@ -24,6 +24,7 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'profile', component:ProfileComponent},
   { path: 'interview/setup', component: InterviewPopupComponent },
+  {path: 'interviews/:id', component: InterviewDetailComponent},
 
   { path: '**', redirectTo: '' }
 ];

@@ -3,11 +3,13 @@ package ma.hariti.asmaa.wrm.simulator.controller;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ma.hariti.asmaa.wrm.simulator.dto.request.*;
+import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
-import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.AIInterviewServiceDefault;
+import ma.hariti.asmaa.wrm.simulator.service.AIInterviewService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class InterviewController {
 
-    private final AIInterviewServiceDefault aiInterviewService;
+    private final AIInterviewService aiInterviewService;
     private final UserRepository userRepository;
 
     @PostMapping("/start")
@@ -129,6 +131,37 @@ public class InterviewController {
         aiInterviewService.deleteInterview(userId, sessionId);
 
         log.info("Interview session {} deleted successfully", sessionId);
+    }
+
+    @GetMapping("/{sessionId}")
+    public InterviewSessionDTO getInterviewById(@PathVariable Long sessionId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getPrincipal() == null) {
+            log.error("Authentication is missing or invalid");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        Object principal = authentication.getPrincipal();
+        Long userId;
+
+        if (principal instanceof UserDetailsImpl) {
+            userId = ((UserDetailsImpl) principal).getId();
+            log.info("Fetching interview session {} for authenticated user {}", sessionId, userId);
+        } else {
+            log.error("Unsupported authentication principal type: {}", principal.getClass().getName());
+            throw new IllegalStateException("Unsupported authentication principal type");
+        }
+
+        return aiInterviewService.getInterviewById(userId, sessionId);
+    }
+
+    @GetMapping("/session/{sessionId}/questions")
+    public List<QuestionDTO> getSessionQuestions(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long sessionId) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        return aiInterviewService.getQuestionsBySessionId(user.getId(), sessionId);
     }
 
 

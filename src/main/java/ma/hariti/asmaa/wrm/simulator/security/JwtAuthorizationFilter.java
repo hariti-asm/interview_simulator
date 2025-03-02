@@ -71,7 +71,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                         requestPath.startsWith("/api/v1/auth/forgot-password") ||
                         requestPath.startsWith("/api/v1/auth/reset-password") ||
                         requestPath.startsWith("/api/v1/auth/refresh-token") )||
-                         requestPath.startsWith("/api/interview/start");
+                requestPath.startsWith("/api/interview/**");
 
     }
 }

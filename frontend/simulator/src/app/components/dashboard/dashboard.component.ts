@@ -1,16 +1,15 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NgChartsModule } from 'ng2-charts';
-import { ChartConfiguration, ChartData } from 'chart.js';
-import { HttpClientModule } from '@angular/common/http';
-import { InterviewSessionDTO } from '../../models/interview-sessiondto';
-import { PerformanceData } from '../../models/performance-data';
-import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
-import { Chart } from 'chart.js';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {NgChartsModule} from 'ng2-charts';
+import {Chart, ChartConfiguration, ChartData} from 'chart.js';
+import {HttpClientModule} from '@angular/common/http';
+import {InterviewSessionDTO} from '../../models/interview-sessiondto';
+import {PerformanceData} from '../../models/performance-data';
+import {AuthService} from '../../services/auth.service';
+import {Router} from '@angular/router';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { HeaderComponent } from '../header/header.component';
-import { InterviewService } from '../../services/interview.service';
+import {HeaderComponent} from '../header/header.component';
+import {InterviewService} from '../../services/interview.service';
 
 Chart.register(annotationPlugin);
 
@@ -228,7 +227,6 @@ export class DashboardComponent implements OnInit {
 
     this.isLoading = true;
 
-    // Use the new getUserInterviews method to fetch interviews for the authenticated user
     this.interviewService.getUserInterviews(this.userId).subscribe(
       sessions => {
         this.interviewSessions = sessions;
@@ -250,7 +248,7 @@ export class DashboardComponent implements OnInit {
             position: session.position,
             company: session.specialization,
             date: new Date(session.startTime).toISOString().split('T')[0],
-            score: session.overallScore || 0,
+            score: session.score || 0,
             status: session.status
           }));
         console.log("interviews of", this.recentInterviews);
@@ -303,7 +301,7 @@ export class DashboardComponent implements OnInit {
     );
   }
   viewInterviewDetails(interviewId: number) {
-    console.log("Viewing details for interview ID:", interviewId);
+    this.router.navigate(['/interviews', interviewId]);
   }
 
   deleteInterview(sessionId: number) {
@@ -311,14 +309,12 @@ export class DashboardComponent implements OnInit {
       this.interviewService.deleteInterview(sessionId).subscribe({
         next: (response) => {
           console.log(`Interview session ${sessionId} deleted successfully.`);
-          // Refresh the interview list or update the UI here
         },
         error: (err) => {
           console.error('Error deleting interview session:', err);
           console.error('Status:', err.status);
           console.error('Message:', err.message);
           console.error('Error details:', err.error);
-          // Display an error message to the user
         }
       });
     }

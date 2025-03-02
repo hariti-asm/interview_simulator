@@ -3,7 +3,9 @@ package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ma.hariti.asmaa.wrm.simulator.dto.request.*;
+import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
@@ -133,4 +135,28 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
         log.info("Interview session {} deleted successfully", sessionId);
     }
+
+    @Override
+    public InterviewSessionDTO getInterviewById(Long userId, Long sessionId) {
+        log.info("Fetching interview session {} for user {}", sessionId, userId);
+
+        InterviewSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Interview session not found for user " + userId));
+
+        return sessionMapper.toDTO(session);
+    }
+
+    @Transactional
+    public List<QuestionDTO> getQuestionsBySessionId(Long userId, Long sessionId) {
+        InterviewSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Session not found for user " + userId));
+
+        List<Question> questions = session.getQuestions();
+
+        return questions.stream()
+                .map(questionMapper::toDTO)
+                .toList();
+    }
+
+
 }

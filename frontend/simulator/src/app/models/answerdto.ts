@@ -1,8 +1,9 @@
 export interface AnswerDTO {
-  id: number;
-  sessionId: number;
-  questionId: number;
-  answerText: string;
-  feedback?: string;
+  id?: number;
+  content: string;
   score?: number;
+  feedback?: string;
+  improvementSuggestions?: string[];
+  questionId?: number;
+  followUpQuestion?: string;
 }
