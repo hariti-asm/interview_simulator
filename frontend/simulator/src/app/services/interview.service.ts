@@ -62,54 +62,28 @@ export class InterviewService {
     });
   }
 
-  processAnswer(sessionId: number, questionId: number, answer: string): Observable<AnswerDTO> {
-    const params = new HttpParams()
-      .set('sessionId', sessionId.toString())
-      .set('questionId', questionId.toString())
-      .set('answer', answer);
 
-    return this.http.post<AnswerDTO>(`${this.apiUrl}/process-answer`, null, {
-      ...this.getAuthHeaders(),
-      params
-    });
-  }
 
-  getRecentInterviews(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/recent`, this.getAuthHeaders());
-  }
 
   getUserInterviews(userId: number): Observable<InterviewSessionDTO[]> {
     return this.http.get<InterviewSessionDTO[]>(`${this.userUrl}/${userId}/interviews`, this.getAuthHeaders());
   }
 
-  getInterviewSessions(userId: number): Observable<InterviewSessionDTO[]> {
-    const params = new HttpParams().set('userId', userId.toString());
-    return this.http.get<InterviewSessionDTO[]>(`${this.apiUrl}/sessions`, {
-      ...this.getAuthHeaders(),
-      params
-    });
-  }
 
-  getUserPerformance(userId: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/${userId}/performance`, this.getAuthHeaders());
-  }
-
-  getPerformanceBySkill(userId: number): Observable<PerformanceData[]> {
-    const params = new HttpParams().set('userId', userId.toString());
-    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills`, {
-      ...this.getAuthHeaders(),
-      params
-    });
+  getPerformanceBySkill(): Observable<PerformanceData[]> {
+    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills`, this.getAuthHeaders());
   }
 
   getOverallPerformanceData(userId: number): Observable<any> {
     const params = new HttpParams().set('userId', userId.toString());
-    return this.http.get<any>(`${this.apiUrl}/performance/summary`, {
-      ...this.getAuthHeaders(),
-      params
-    });
+    return this.http.get<any>(
+      `${this.apiUrl}/performance/summary`,
+      {
+        headers: this.authService.getAuthHeaders(),
+        params
+      }
+    );
   }
-
   getSessionDetails(sessionId: number): Observable<InterviewSessionDTO> {
     return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
   }
@@ -139,5 +113,12 @@ export class InterviewService {
 
   getInterviewById(sessionId: number): Observable<InterviewSessionDTO> {
     return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
+  }
+  submitAnswer(sessionId: number, questionId: number, answerData: AnswerDTO): Observable<AnswerDTO> {
+    return this.http.post<AnswerDTO>(
+      `${this.apiUrl}/sessions/${sessionId}/questions/${questionId}/answers`,
+      answerData,
+      { headers: this.authService.getAuthHeaders() }
+    );
   }
 }

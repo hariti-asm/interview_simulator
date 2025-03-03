@@ -253,7 +253,6 @@ export class DashboardComponent implements OnInit {
           }));
         console.log("interviews of", this.recentInterviews);
 
-        this.loadPerformanceData();
       },
       error => {
         console.error('Error loading interview sessions:', error);
@@ -264,42 +263,6 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  loadPerformanceData(): void {
-    if (!this.userId) return;
-
-    this.interviewService.getUserPerformance(this.userId).subscribe(
-      performance => {
-        console.log('Performance data:', performance);
-
-        if (performance.skills) {
-          this.processSkillData(performance.skills);
-          this.processSkillImprovements(performance.skills);
-          this.processPerformanceImprovementData(performance.skills);
-        }
-
-        if (performance.summary) {
-          this.updatePerformanceSummary(performance.summary);
-        }
-
-        if (performance.topicPerformance) {
-          this.topicPerformanceData.labels = performance.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
-          this.topicPerformanceData.datasets[0].data = performance.topicPerformance.map((topic: TopicPerformanceItem) => topic.score);
-        }
-
-        if (performance.trend) {
-          this.performanceData = performance.trend.map((item: PerformanceTrendItem) => ({
-            month: item.month,
-            score: item.score
-          }));
-        }
-      },
-      error => {
-        console.error('Error loading performance data:', error);
-        this.setError('Could not load performance data.');
-        this.loadSampleData();
-      }
-    );
-  }
   viewInterviewDetails(interviewId: number) {
     this.router.navigate(['/interviews', interviewId]);
   }
@@ -320,21 +283,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  loadPerformanceBySkill(): void {
-    if (!this.userId) return;
-
-    this.interviewService.getPerformanceBySkill(this.userId).subscribe(
-      skillData => {
-        this.processSkillData(skillData);
-        this.processSkillImprovements(skillData);
-        this.processPerformanceImprovementData(skillData);
-      },
-      error => {
-        console.error('Error loading skill performance data:', error);
-        this.setError('Could not load skill performance data.');
-      }
-    );
-  }
 
   updatePerformanceSummary(summary: any): void {
     if (summary.successRate !== undefined) {

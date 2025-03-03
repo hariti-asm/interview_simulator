@@ -85,6 +85,33 @@ public class InterviewController {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return aiInterviewService.processAnswer(user.getId(), sessionId, questionId, answer);
     }
+    @PostMapping("/sessions/{sessionId}/questions/{questionId}/answers")
+    public AnswerDTO submitAnswer(
+            @PathVariable Long sessionId,
+            @PathVariable Long questionId,
+            @RequestBody AnswerDTO answerDTO,
+            @RequestParam(required = false) Long userId // Temporary solution
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long authenticatedUserId = null;
+
+        // Try to get user ID from authentication
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl) {
+            authenticatedUserId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
+            log.info("User ID from authentication: {}", authenticatedUserId);
+        }
+        // Use provided userId parameter as fallback (TEMPORARY, NOT SECURE)
+        else if (userId != null) {
+            authenticatedUserId = userId;
+            log.warn("Using userId from request parameter: {}. This is insecure and should be temporary!", userId);
+        }
+        else {
+            log.error("Authentication failed and no userId provided");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        return aiInterviewService.processAnswer(authenticatedUserId, sessionId, questionId, answerDTO.getContent());
+    }
 
     @GetMapping("/next-question")
     public QuestionDTO generateNextQuestion(

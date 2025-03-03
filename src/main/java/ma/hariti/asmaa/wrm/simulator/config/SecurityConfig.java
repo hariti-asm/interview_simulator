@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/refresh-token").permitAll()
                         .requestMatchers("/api/v1/auth/profile").authenticated()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
-                        .requestMatchers("/api/interview/start").permitAll()
+                        .requestMatchers("/api/interview/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

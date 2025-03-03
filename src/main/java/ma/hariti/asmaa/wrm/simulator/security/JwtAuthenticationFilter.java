@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -68,15 +69,13 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                                             FilterChain chain, Authentication authResult) throws IOException {
         Object principal = authResult.getPrincipal();
 
-        // Log the class type of the principal to verify it is of type UserDetailsImpl
-        log.info("Principal class type: {}", principal.getClass().getName());
-
         if (principal instanceof UserDetailsImpl) {
             UserDetailsImpl userDetails = (UserDetailsImpl) principal;
 
             // Log user details to confirm
             log.info("Authenticated user: {}", userDetails.getUsername());
 
+            // Generate JWT tokens
             LoginRequest loginRequest = (LoginRequest) request.getAttribute("loginRequest");
             boolean rememberMe = loginRequest != null && loginRequest.isRememberMe();
 
@@ -84,6 +83,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             String refreshToken = jwtService.generateRefreshToken(userDetails);
             String rememberMeToken = rememberMe ? jwtService.generateRememberMeToken(userDetails) : null;
 
+            // Create the authentication response
             AuthResponse authResponse = AuthResponse.builder()
                     .token(token)
                     .refreshToken(refreshToken)
@@ -91,8 +91,14 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                     .user(userDetails.toUserResponse())
                     .build();
 
+            // Set JWT token in response header
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             objectMapper.writeValue(response.getOutputStream(), authResponse);
+
+            // Set the authentication object in the SecurityContext
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
         } else {
             log.error("Unexpected principal type: {}", principal.getClass().getName());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unexpected authentication principal type");
