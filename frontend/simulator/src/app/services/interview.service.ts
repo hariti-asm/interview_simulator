@@ -52,7 +52,7 @@ export class InterviewService {
     });
   }
 
-  getNextQuestion(sessionId: number): Observable<QuestionDTO> {
+  getNextQuestion(sessionId: number, p0: { excludedQuestions: string[]; }): Observable<QuestionDTO> {
     const params = new HttpParams()
       .set('sessionId', sessionId.toString());
 

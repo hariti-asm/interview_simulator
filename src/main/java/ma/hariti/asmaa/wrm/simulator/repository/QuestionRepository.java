@@ -11,11 +11,6 @@ import java.util.Optional;
 
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
-    Optional<Question> findByIdAndSessionId(Long questionId, Long sessionId);
-    @Query("SELECT q FROM Question q WHERE q.id = :questionId AND q.session.id = :sessionId")
-    Optional<Question> findByIdAndSessionIdExplicitly(
-            @Param("questionId") Long questionId,
-            @Param("sessionId") Long sessionId
-    );
+
 }
 

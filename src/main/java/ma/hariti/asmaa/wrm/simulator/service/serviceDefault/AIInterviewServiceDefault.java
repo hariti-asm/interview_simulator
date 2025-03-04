@@ -66,9 +66,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found with id: " + sessionId));
 
-//        if (!userId.equals(session.getUser().getId())) {
-//            throw new SecurityException("User not authorized to access this session");
-//        }
+
 
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
