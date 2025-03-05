@@ -34,7 +34,7 @@ public class Answer {
     @ElementCollection
     @CollectionTable(name = "improvement_suggestions",
             joinColumns = @JoinColumn(name = "answer_id"))
-    @Column(name = "suggestion")
+    @Column(name = "suggestion",length = 1000)
     private List<String> improvementSuggestions = new ArrayList<>();
 
     @OneToOne

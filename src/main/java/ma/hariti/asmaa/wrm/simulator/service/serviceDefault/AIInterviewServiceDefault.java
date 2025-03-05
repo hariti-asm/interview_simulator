@@ -6,12 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.entity.Answer;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.mapper.AnswerMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.InterviewSessionMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.QuestionMapper;
+import ma.hariti.asmaa.wrm.simulator.repository.AnswerRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.QuestionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     private final AnswerService answerService;
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
+    private final AnswerRepository answerRepository;
 
     @Transactional
     public InterviewSessionDTO startNewSession(Long userId, String position, String specialization, String experienceLevel) {
@@ -66,10 +70,13 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found with id: " + sessionId));
 
-
-
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
+
+        // Check if an answer already exists for this question
+        Optional<Answer> existingAnswer = question.getAnswer() != null
+                ? Optional.of(question.getAnswer())
+                : Optional.empty();
 
         String expectedAnswer = question.getExpectedAnswer();
 
@@ -86,15 +93,27 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         Float score = answerService.calculateScore(answer, expectedAnswer);
         List<String> improvementPoints = answerService.generateImprovementSuggestions(answer, expectedAnswer);
 
-     AnswerDTO answerDTO = answerMapper.toDTO(feedback, followUpQuestion);
-        answerDTO.setScore(score);
-        answerDTO.setImprovementSuggestions(improvementPoints);
+        Answer answerEntity;
+        answerEntity = existingAnswer.orElseGet(Answer::new);
+
+        answerEntity.setContent(answer);
+        answerEntity.setQuestion(question);
+        answerEntity.setScore(score);
+        answerEntity.setImprovementSuggestions(improvementPoints);
+
+        Answer savedAnswer = answerRepository.save(answerEntity);
+
+        question.setAnswer(savedAnswer);
+        questionRepository.save(question);
+
+        AnswerDTO answerDTO = answerMapper.toDTO(savedAnswer);
         answerDTO.setContent(answer);
         answerDTO.setQuestionId(questionId);
+        answerDTO.setFeedback(feedback);
+        answerDTO.setFollowUpQuestion(followUpQuestion);
 
         return answerDTO;
     }
-
     @Transactional
     public QuestionDTO generateNextQuestion(Long userId, Long sessionId) {
         InterviewSession session = sessionRepository.findById(sessionId)
