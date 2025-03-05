@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class AnswerServiceDefault implements AnswerService {
     private static final float CONTENT_WEIGHT = 0.5f;
     private static final float TECHNICAL_TERMS_WEIGHT = 0.3f;
     private static final float STRUCTURE_WEIGHT = 0.2f;
+    private static final int MAX_SUGGESTION_LENGTH = 500;
 
     @Override
     @Transactional
@@ -88,28 +90,31 @@ public class AnswerServiceDefault implements AnswerService {
 
         return Math.min(100.0f, Math.max(0.0f, finalScore));
     }
+    private String truncate(String suggestion) {
+        return suggestion.length() > MAX_SUGGESTION_LENGTH
+                ? suggestion.substring(0, MAX_SUGGESTION_LENGTH)
+                : suggestion;
+    }
 
     @Override
     public List<String> generateImprovementSuggestions(String userAnswer, String expectedAnswer) {
         List<String> suggestions = new ArrayList<>();
 
-        // Content analysis
         Set<String> expectedKeywords = extractKeywords(expectedAnswer);
         Set<String> userKeywords = extractKeywords(userAnswer);
         Set<String> missingKeywords = new HashSet<>(expectedKeywords);
         missingKeywords.removeAll(userKeywords);
 
         if (!missingKeywords.isEmpty()) {
-            suggestions.add("Include these key concepts: " + String.join(", ", missingKeywords));
+            suggestions.add(truncate("Add missing key concepts to improve your answer's depth and comprehensiveness."));
         }
 
-        // Length analysis
         int expectedLength = expectedAnswer.split("\\s+").length;
         int userLength = userAnswer.split("\\s+").length;
         if (userLength < expectedLength * 0.7) {
-            suggestions.add("Your answer needs more detail. Consider expanding your explanation.");
+            suggestions.add(truncate("Provide more detailed explanations and include specific examples to support your key points."));
         } else if (userLength > expectedLength * 1.5) {
-            suggestions.add("Try to be more concise while keeping the key points.");
+            suggestions.add(truncate("Condense your answer. Focus on the most critical points and remove unnecessary elaboration."));
         }
 
         // Technical terms analysis
@@ -119,14 +124,24 @@ public class AnswerServiceDefault implements AnswerService {
         missingTerms.removeAll(userTechnicalTerms);
 
         if (!missingTerms.isEmpty()) {
-            suggestions.add("Consider using these technical terms: " + String.join(", ", missingTerms));
+            suggestions.add(truncate("Incorporate more precise technical terminology to demonstrate professional knowledge and understanding."));
         }
 
         if (!hasProperStructure(userAnswer)) {
-            suggestions.add("Structure your answer better with an introduction, main points, and conclusion.");
+            suggestions.add(truncate("Improve answer structure. Use clear sections with introduction, main points, and conclusion."));
         }
 
-        return suggestions;
+        if (userAnswer.toLowerCase().contains("like") || userAnswer.toLowerCase().contains("um")) {
+            suggestions.add(truncate("Enhance communication clarity. Avoid filler words and speak with confidence."));
+        }
+
+        if (suggestions.isEmpty()) {
+            suggestions.add("Your answer shows solid understanding.");
+        }
+
+        return suggestions.stream()
+                .limit(4)
+                .collect(Collectors.toList());
     }
 
     private float calculateContentScore(String userAnswer, String expectedAnswer) {
@@ -205,17 +220,14 @@ public class AnswerServiceDefault implements AnswerService {
     private boolean hasProperStructure(String text) {
         int structureElements = 0;
 
-        // Check for introduction
         if (Pattern.compile("(?i)(first|initially|to begin with|introduction)").matcher(text).find()) {
             structureElements++;
         }
 
-        // Check for main points
         if (Pattern.compile("(?i)(secondly|furthermore|moreover|in addition|next)").matcher(text).find()) {
             structureElements++;
         }
 
-        // Check for conclusion
         if (Pattern.compile("(?i)(finally|in conclusion|to summarize|therefore|thus)").matcher(text).find()) {
             structureElements++;
         }

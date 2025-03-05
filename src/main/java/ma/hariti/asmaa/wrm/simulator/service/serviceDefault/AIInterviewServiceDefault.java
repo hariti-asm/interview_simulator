@@ -73,7 +73,6 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
 
-        // Check if an answer already exists for this question
         Optional<Answer> existingAnswer = question.getAnswer() != null
                 ? Optional.of(question.getAnswer())
                 : Optional.empty();

@@ -74,7 +74,7 @@ public class AIServiceDefault implements AIService {
     @Override
     public String generateQuestionFeedback(String question, String answer) {
         String prompt = String.format(
-                "Given the interview question: '%s' and the answer: '%s', provide detailed feedback.",
+                "Give a concise feedback (under 200 characters). Evaluate the answer to this interview question: '%s'. Focus on the most critical aspects of the response.",
                 question, answer
         );
         return callOpenAI(prompt);
