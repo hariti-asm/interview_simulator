@@ -9,6 +9,7 @@ import {HomeComponent} from './components/home/home.component';
 import {ProfileComponent} from './components/profile/profile.component';
 import {InterviewPopupComponent} from './components/interview-popup-component/interview-popup-component.component';
 import {InterviewDetailComponent} from './components/interview-detail/interview-detail.component';
+import {AdminComponent} from './components/admin/admin.component';
 
 export const routes: Routes = [
 
@@ -25,6 +26,6 @@ export const routes: Routes = [
   { path: 'profile', component:ProfileComponent},
   { path: 'interview/setup', component: InterviewPopupComponent },
   {path: 'interviews/:id', component: InterviewDetailComponent},
-
+  {path:'admin',component:AdminComponent},
   { path: '**', redirectTo: '' }
 ];

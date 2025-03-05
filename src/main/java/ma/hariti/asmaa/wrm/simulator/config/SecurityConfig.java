@@ -50,6 +50,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/profile").authenticated()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers("/api/interview/**").permitAll()
+                        .requestMatchers("/api/users/**").permitAll()
+
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
