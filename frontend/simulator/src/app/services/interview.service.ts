@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {map, Observable} from 'rxjs';
 import {InterviewSessionDTO} from '../models/interview-sessiondto';
 import {QuestionDTO} from '../models/questiondto';
 import {AnswerDTO} from '../models/answerdto';
@@ -62,11 +62,33 @@ export class InterviewService {
     });
   }
 
-
-
-
   getUserInterviews(userId: number): Observable<InterviewSessionDTO[]> {
-    return this.http.get<InterviewSessionDTO[]>(`${this.userUrl}/${userId}/interviews`, this.getAuthHeaders());
+    return this.http.get<InterviewSessionDTO[]>(`${this.userUrl}/${userId}/interviews`).pipe(
+      map(sessions =>
+        sessions.map(session => {
+          if (session.questions && session.questions.length > 0) {
+            const questions = session.questions as QuestionDTO[];
+
+            const totalScore = questions.reduce((sum, question) => {
+              const questionScore = question.answer?.score ?? 0;
+              console.log(`Question ${question.id} score: ${questionScore}`);
+
+              return sum + questionScore;
+            }, 0);
+
+            session.score = questions.length > 0 ? totalScore / questions.length : 0;
+
+            if (session.score <= 10 && session.score > 0) {
+              session.score = session.score * 10;
+            }
+          } else {
+            session.score = 0;
+          }
+
+          return session;
+        })
+      )
+    );
   }
 
 

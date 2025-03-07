@@ -1,5 +1,6 @@
 package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import ma.hariti.asmaa.wrm.simulator.entity.Answer;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
@@ -9,7 +10,6 @@ import ma.hariti.asmaa.wrm.simulator.service.AnswerService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -117,7 +117,6 @@ public class AnswerServiceDefault implements AnswerService {
             suggestions.add(truncate("Condense your answer. Focus on the most critical points and remove unnecessary elaboration."));
         }
 
-        // Technical terms analysis
         Set<String> expectedTechnicalTerms = extractTechnicalTerms(expectedAnswer);
         Set<String> userTechnicalTerms = extractTechnicalTerms(userAnswer);
         Set<String> missingTerms = new HashSet<>(expectedTechnicalTerms);

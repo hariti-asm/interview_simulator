@@ -31,7 +31,7 @@ interface TopicPerformanceItem {
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit {
-
+  Math = Math;
   performanceData: {month: string, score: number}[] = [];
 
   recentInterviews: {
@@ -241,18 +241,25 @@ export class DashboardComponent implements OnInit {
         this.statsCards[1].value = sessions.length.toString();
         this.statsCards[1].trend = '+' + (sessions.length > 0 ? 1 : 0);
 
+        const successfulInterviews = sessions.filter(session => (session.score || 0) > 70).length;
+        const successRate = sessions.length > 0 ? (successfulInterviews / sessions.length) * 100 : 0;
+        this.statsCards[0].value = successRate.toFixed(1) + '%';
+
+        const bestScore = Math.max(...sessions.map(session => session.score || 0));
+        this.statsCards[3].value = bestScore.toFixed(1) + '%';
+
         this.recentInterviews = sessions
           .slice(0, 5)
           .map((session: InterviewSessionDTO) => ({
-            id:session.id,
+            id: session.id,
             position: session.position,
             company: session.specialization,
             date: new Date(session.startTime).toISOString().split('T')[0],
             score: session.score || 0,
             status: session.status
           }));
-        console.log("interviews of", this.recentInterviews);
 
+        console.log("Loaded interviews:", this.recentInterviews);
       },
       error => {
         console.error('Error loading interview sessions:', error);
@@ -262,7 +269,6 @@ export class DashboardComponent implements OnInit {
       }
     );
   }
-
   viewInterviewDetails(interviewId: number) {
     this.router.navigate(['/interviews', interviewId]);
   }

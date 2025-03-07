@@ -1,3 +1,5 @@
+import {QuestionDTO} from './questiondto';
+
 export interface InterviewSessionDTO {
   id: number;
   position: string;
@@ -6,4 +8,5 @@ export interface InterviewSessionDTO {
   startTime: Date;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
   score?: number;
+  questions: QuestionDTO[];
 }
