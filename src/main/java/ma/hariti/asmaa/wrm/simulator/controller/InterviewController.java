@@ -7,6 +7,7 @@ import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
+import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
 import ma.hariti.asmaa.wrm.simulator.service.AIInterviewService;
@@ -16,7 +17,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/interview")
@@ -26,7 +30,7 @@ public class InterviewController {
 
     private final AIInterviewService aiInterviewService;
     private final UserRepository userRepository;
-
+private final InterviewSessionRepository interviewSessionRepository;
     @PostMapping("/start")
     public InterviewSessionDTO startNewSession(
             @RequestParam String position,
@@ -190,6 +194,16 @@ public class InterviewController {
 
         return aiInterviewService.getQuestionsBySessionId(user.getId(), sessionId);
     }
+    @GetMapping("/positions/count")
+    public List<Map<String, Object>> getInterviewPositionCounts() {
+        List<Object[]> results = interviewSessionRepository.countInterviewsByPosition();
 
+        return results.stream().map(result -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("position", result[0]);
+            map.put("count", result[1]);
+            return map;
+        }).collect(Collectors.toList());
+    }
 
 }

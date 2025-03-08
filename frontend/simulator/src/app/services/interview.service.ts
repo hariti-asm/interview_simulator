@@ -143,4 +143,7 @@ export class InterviewService {
       { headers: this.authService.getAuthHeaders() }
     );
   }
+  getInterviewPositionCounts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/positions/count`, this.getAuthHeaders());
+  }
 }
