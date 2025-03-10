@@ -146,4 +146,9 @@ export class InterviewService {
   getInterviewPositionCounts(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/positions/count`, this.getAuthHeaders());
   }
+
+
+  getUserSkillPerformance(userId: number): Observable<PerformanceData[]> {
+    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills/${userId}`);
+  }
 }

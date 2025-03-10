@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import {HeaderComponent} from '../header/header.component';
 
 @Component({
   selector: 'app-profile',
@@ -10,7 +11,8 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    HeaderComponent
   ]
 })
 export class ProfileComponent implements OnInit {
@@ -41,7 +43,6 @@ export class ProfileComponent implements OnInit {
       bio: ['', Validators.maxLength(500)]
     });
 
-    // Disable email field as it's typically not changeable without verification
     this.profileForm.get('email')?.disable();
   }
 
@@ -53,7 +54,6 @@ export class ProfileComponent implements OnInit {
           this.userProfile = profile;
           this.updateFormWithProfileData(profile);
         } else {
-          // If no profile data is available, check if user is authenticated
           if (!this.authService.isAuthenticated()) {
             this.router.navigate(['/login'], {
               queryParams: { returnUrl: '/profile' }
@@ -90,24 +90,25 @@ export class ProfileComponent implements OnInit {
     this.errorMessage = '';
 
     const updatedProfile = {
-      firstName: this.profileForm.get('firstName')?.value
+      firstName: this.profileForm.get('firstName')?.value,
+      email: this.profileForm.get('email')?.getRawValue()
     };
 
     console.log('Submitting profile update:', updatedProfile);
 
-    this.authService.updateUserProfile(updatedProfile).subscribe(
-      (response) => {
+    this.authService.updateUserProfile(updatedProfile).subscribe({
+      next: (response) => {
+        console.log('Profile update success:', response);
         this.successMessage = 'Profile updated successfully';
-        // Update the local profile with the response
         this.userProfile = response;
         this.isSaving = false;
       },
-      (error) => {
+      error: (error) => {
         console.error('Error updating profile:', error);
         this.errorMessage = 'Failed to update profile. Please try again.';
         this.isSaving = false;
       }
-    );
+    });
   }
   markAllAsTouched(): void {
     Object.keys(this.profileForm.controls).forEach(key => {

@@ -16,4 +16,6 @@ public  class InterviewSessionDTO {
     private List<String> weakPoints;
     private Long userId;
     private List<QuestionDTO> questions;
+   private String experienceLevel;
+    private String specialization;
 }

@@ -13,6 +13,7 @@ import jakarta.persistence.EntityNotFoundException;
 import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.response.QuestionResponse;
 import ma.hariti.asmaa.wrm.simulator.entity.Answer;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
@@ -315,7 +316,7 @@ public class AIInterviewServiceDefaultTest {
         @DisplayName("Should generate next question successfully")
         void shouldGenerateNextQuestionSuccessfully() {
             // Arrange
-            AIServiceDefault.QuestionResponse questionResponse = new AIServiceDefault.QuestionResponse();
+         QuestionResponse questionResponse = new QuestionResponse();
             questionResponse.setQuestion("What are the principles of SOLID?");
             questionResponse.setExpectedAnswer("SOLID is an acronym for five design principles in object-oriented programming...");
 

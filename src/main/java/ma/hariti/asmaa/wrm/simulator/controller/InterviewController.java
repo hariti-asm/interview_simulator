@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.response.PerformanceData;
 import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
@@ -204,6 +205,69 @@ private final InterviewSessionRepository interviewSessionRepository;
             map.put("count", result[1]);
             return map;
         }).collect(Collectors.toList());
+    }
+    @GetMapping("/performance/skills/{userId}")
+    public List<PerformanceData> getUserSkillPerformance(@PathVariable Long userId) {
+        log.info("Fetching performance by skill for specified user {}", userId);
+        return aiInterviewService.getPerformanceBySkill(userId);
+    }
+    @GetMapping("/performance/skills")
+    public List<PerformanceData> getPerformanceBySkill() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
+            log.error("Authentication is missing or invalid");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+
+        log.info("Fetching performance by skill for user {}", userId);
+        return aiInterviewService.getPerformanceBySkill(userId);
+    }
+    @GetMapping("/session/{sessionId}/feedback")
+    public Map<String, Object> getInterviewFeedback(@PathVariable Long sessionId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
+            log.error("Authentication is missing or invalid");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+
+        InterviewSessionDTO session = aiInterviewService.getInterviewById(userId, sessionId);
+
+        // Calculate average score from questions
+        double totalScore = 0;
+        int answeredQuestions = 0;
+
+        if (session.getQuestions() != null) {
+            for (QuestionDTO question : session.getQuestions()) {
+                if (question.getAnswer() != null && question.getAnswer().getScore() != null) {
+                    totalScore += question.getAnswer().getScore();
+                    answeredQuestions++;
+                }
+            }
+        }
+
+        double averageScore = answeredQuestions > 0 ? totalScore / answeredQuestions : 0;
+
+        // Prepare feedback response
+        Map<String, Object> feedback = new HashMap<>();
+        feedback.put("sessionId", sessionId);
+        feedback.put("position", session.getPosition());
+        feedback.put("specialization", session.getSpecialization());
+        feedback.put("experienceLevel", session.getExperienceLevel());
+        feedback.put("score", averageScore);
+        feedback.put("answeredQuestions", answeredQuestions);
+        feedback.put("totalQuestions", session.getQuestions() != null ? session.getQuestions().size() : 0);
+
+        // Could add more AI-generated feedback here
+
+        return feedback;
     }
 
 }

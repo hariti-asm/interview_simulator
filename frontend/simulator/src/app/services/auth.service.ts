@@ -171,14 +171,23 @@ export class AuthService {
   }
 
   updateUserProfile(profileData: any): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/profile`, profileData)
-      .pipe(
-        tap(response => {
-          this.userProfileSubject.next({
-            ...this.userProfileSubject.value,
-            ...profileData
-          });
-        })
-      );
+    const headers = this.getAuthHeaders();
+
+    return this.http.put<any>(
+      `${this.baseUrl}/profile`,
+      profileData,
+      { headers, withCredentials: true }
+    ).pipe(
+      tap(response => {
+        this.userProfileSubject.next({
+          ...this.userProfileSubject.value,
+          ...profileData
+        });
+      }),
+      catchError(error => {
+        console.error('Profile update error:', error);
+        return throwError(() => error);
+      })
+    );
   }
 }

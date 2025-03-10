@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.response.PerformanceData;
+import ma.hariti.asmaa.wrm.simulator.dto.response.QuestionResponse;
 import ma.hariti.asmaa.wrm.simulator.entity.Answer;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
@@ -23,8 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -118,8 +119,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found"));
 
-
-        AIServiceDefault.QuestionResponse questionResponse = aiService.generateQuestion(
+     QuestionResponse questionResponse = aiService.generateQuestion(
                 session.getPosition(),
                 session.getExperienceLevel(),
                 session.getInterviewContext()
@@ -128,6 +128,7 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         Question question = new Question();
         question.setContent(questionResponse.getQuestion());
         question.setExpectedAnswer(questionResponse.getExpectedAnswer());
+        question.setSkill(questionResponse.getSkill()); // Set the skill from the AI response
         question.setSession(session);
 
         Question savedQuestion = questionRepository.save(question);
@@ -135,10 +136,12 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         session.getQuestions().add(savedQuestion);
         sessionRepository.save(session);
 
-        log.info("Generated and saved question with ID: {} for user: {}", savedQuestion.getId(), userId);
-        return questionMapper.toDTO(savedQuestion);
-    }
+        log.info("Generated and saved question with ID: {} for user: {}, skill: {}",
+                savedQuestion.getId(), userId, questionResponse.getSkill());
 
+        QuestionDTO questionDTO = questionMapper.toDTO(savedQuestion);
+        return questionDTO;
+    }
     @Override
     @Transactional
     public void deleteInterview(Long userId, Long sessionId) {
@@ -173,6 +176,71 @@ public class AIInterviewServiceDefault implements AIInterviewService {
                 .map(questionMapper::toDTO)
                 .toList();
     }
+    @Override
+    public List<PerformanceData> getPerformanceBySkill(Long userId) {
+        // You need to implement getUserInterviews method or get data directly from repository
+        List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
+        List<InterviewSessionDTO> userSessionDTOs = userSessions.stream()
+                .map(sessionMapper::toDTO)
+                .toList();
 
+        Map<String, List<Double>> skillScores = new HashMap<>();
+
+        for (InterviewSessionDTO session : userSessionDTOs) {
+            if (session.getQuestions() != null) {
+                for (QuestionDTO question : session.getQuestions()) {
+                    if (question.getSkill() != null && question.getAnswer() != null) {
+                        skillScores.computeIfAbsent(question.getSkill(), k -> new ArrayList<>())
+                                .add((double) question.getAnswer().getScore());
+                    }
+                }
+            }
+        }
+
+        List<PerformanceData> result = new ArrayList<>();
+        for (Map.Entry<String, List<Double>> entry : skillScores.entrySet()) {
+            double averageScore = entry.getValue().stream()
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+
+            PerformanceData data = new PerformanceData();
+            data.setSkill(entry.getKey());
+            data.setScore(averageScore);
+            data.setQuestionCount(entry.getValue().size());
+            result.add(data);
+        }
+
+        return result;
+    }
+@Override
+    public Map<String, Object> getOverallPerformance(Long userId) {
+        List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
+        List<InterviewSessionDTO> userSessionDTOs = userSessions.stream()
+                .map(sessionMapper::toDTO)
+                .toList();
+
+        double overallScore = userSessionDTOs.stream()
+                .mapToDouble(InterviewSessionDTO::getFinalScore)
+                .average()
+                .orElse(0.0);
+
+        int totalInterviews = userSessionDTOs.size();
+        int totalQuestions = userSessionDTOs.stream()
+                .mapToInt(s -> s.getQuestions() != null ? s.getQuestions().size() : 0)
+                .sum();
+
+        // You need to implement this method in AIService
+        String performanceAnalysis = aiService.generatePerformanceAnalysis(userSessionDTOs);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", userId);
+        result.put("overallScore", overallScore);
+        result.put("totalInterviews", totalInterviews);
+        result.put("totalQuestions", totalQuestions);
+        result.put("analysis", performanceAnalysis);
+
+        return result;
+    }
 
 }

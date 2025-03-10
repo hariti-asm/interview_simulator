@@ -12,5 +12,6 @@ public class QuestionDTO {
     private String content;
     private String expectedAnswer;
     private Long sessionId;
+    private String skill;
     private AnswerDTO answer;
 }

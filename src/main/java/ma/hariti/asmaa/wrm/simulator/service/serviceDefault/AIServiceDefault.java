@@ -1,7 +1,10 @@
 package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
+import ma.hariti.asmaa.wrm.simulator.dto.response.QuestionResponse;
 import ma.hariti.asmaa.wrm.simulator.service.AIService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -13,20 +16,22 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+
 @Slf4j
 @Service
 public class AIServiceDefault implements AIService {
 
     private final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+
     @Value("${openai.api.key}")
     private String apiKey;
+
     private final RestTemplate restTemplate;
+
     public AIServiceDefault(RestTemplateBuilder restTemplateBuilder) {
-        this.restTemplate = restTemplateBuilder
-                .build();
+        this.restTemplate = restTemplateBuilder.build();
     }
 
     @Override
@@ -43,10 +48,12 @@ public class AIServiceDefault implements AIService {
     public QuestionResponse generateQuestion(String position, String experienceLevel, String context) {
         String prompt = String.format(
                 "Based on the context of interviewing for a %s position with %s experience level, " +
-                        "and considering the previous context: '%s', generate a technical interview question " +
-                        "AND its expected answer. Format the response exactly like this:\n" +
+                        "and considering the previous context: '%s', generate a technical interview question, " +
+                        "its expected answer, and the primary skill category this question tests. " +
+                        "Format the response exactly like this:\n" +
                         "QUESTION: [your question here]\n" +
-                        "EXPECTED_ANSWER: [detailed expected answer here]",
+                        "EXPECTED_ANSWER: [detailed expected answer here]\n" +
+                        "SKILL: [primary skill being tested, e.g. Java, Algorithms, System Design, Database, etc.]",
                 position, experienceLevel, context
         );
 
@@ -56,14 +63,33 @@ public class AIServiceDefault implements AIService {
 
     private QuestionResponse parseQuestionResponse(String response) {
         QuestionResponse qr = new QuestionResponse();
+
+        // Check for SKILL tag first
+        String[] skillParts = response.split("SKILL:");
+        String skillValue = null;
+
+        if (skillParts.length >= 2) {
+            skillValue = skillParts[1].trim();
+        }
+
+        // Now parse for question and answer
         String[] parts = response.split("EXPECTED_ANSWER:");
 
         if (parts.length >= 2) {
             String questionPart = parts[0].replace("QUESTION:", "").trim();
-            String answerPart = parts[1].trim();
+
+            // For the answer part, we need to handle if SKILL is present or not
+            String answerPart;
+            if (skillParts.length >= 2) {
+                // If SKILL is present, we need to extract only the answer part
+                answerPart = parts[1].split("SKILL:")[0].trim();
+            } else {
+                answerPart = parts[1].trim();
+            }
 
             qr.setQuestion(questionPart);
             qr.setExpectedAnswer(answerPart);
+            qr.setSkill(skillValue != null ? skillValue : "General Technical"); // Set default if no skill provided
         } else {
             throw new IllegalStateException("Invalid response format from AI");
         }
@@ -74,7 +100,8 @@ public class AIServiceDefault implements AIService {
     @Override
     public String generateQuestionFeedback(String question, String answer) {
         String prompt = String.format(
-                "Give a concise feedback (under 200 characters). Evaluate the answer to this interview question: '%s'. Focus on the most critical aspects of the response.",
+                "Give a concise feedback (under 200 characters). Evaluate the answer to this interview question: '%s'. " +
+                        "The candidate's answer is: '%s'. Focus on the most critical aspects of the response.",
                 question, answer
         );
         return callOpenAI(prompt);
@@ -133,9 +160,69 @@ public class AIServiceDefault implements AIService {
             throw new RuntimeException("Failed to communicate with OpenAI API", e);
         }
     }
-    @Data
-    public static class QuestionResponse {
-        private String question;
-        private String expectedAnswer;
+
+    @Override
+    public String generatePerformanceAnalysis(List<InterviewSessionDTO> sessions) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Analysis request for ").append(sessions.size()).append(" interview sessions.\n");
+
+        for (InterviewSessionDTO session : sessions) {
+            sb.append("Position: ").append(session.getPosition())
+                    .append(", Score: ").append(session.getFinalScore())
+                    .append("\n");
+        }
+
+        String prompt = String.format(
+                "Analyze the following interview performance data and provide a comprehensive assessment:\n%s\n" +
+                        "Focus on trends, strengths, weaknesses, and specific areas for improvement. " +
+                        "Also suggest next steps for career development based on the performance data.",
+                sb.toString()
+        );
+
+        return callOpenAI(prompt);
+    }
+
+    @Override
+    public String generateSkillsAssessment(List<QuestionDTO> answeredQuestions) {
+        StringBuilder sb = new StringBuilder();
+
+        for (QuestionDTO question : answeredQuestions) {
+            sb.append("Question: ").append(question.getContent())
+                    .append("\nSkill: ").append(question.getSkill() != null ? question.getSkill() : "General Technical")
+                    .append("\nAnswer: ").append(question.getAnswer() != null ? question.getAnswer().getContent() : "No answer")
+                    .append("\nScore: ").append(question.getAnswer() != null ? question.getAnswer().getScore() : 0)
+                    .append("\n\n");
+        }
+
+        String prompt = String.format(
+                "Based on the following interview questions and answers, assess the technical skills demonstrated:\n%s\n" +
+                        "Categorize skills by proficiency level (Beginner, Intermediate, Advanced, Expert) " +
+                        "and provide specific evidence from the answers for each assessment.",
+                sb.toString()
+        );
+
+        return callOpenAI(prompt);
+    }
+
+    @Override
+    public String generateImprovementSuggestions(List<AnswerDTO> userAnswers) {
+        StringBuilder sb = new StringBuilder();
+
+        for (AnswerDTO answer : userAnswers) {
+            sb.append("Question ID: ").append(answer.getQuestionId())
+                    .append("\nAnswer: ").append(answer.getContent())
+                    .append("\nScore: ").append(answer.getScore())
+                    .append("\nFeedback: ").append(answer.getFeedback())
+                    .append("\n\n");
+        }
+
+        String prompt = String.format(
+                "Based on the following interview answers and feedback, suggest concrete improvements:\n%s\n" +
+                        "Provide specific learning resources, practice exercises, and skill development strategies " +
+                        "tailored to the candidate's current level. Focus on the most critical areas for improvement first.",
+                sb.toString()
+        );
+
+        return callOpenAI(prompt);
     }
 }

@@ -50,10 +50,22 @@ export class DashboardComponent implements OnInit {
     datasets: [
       {
         data: [0, 0, 0, 0, 0],
-        label: 'Skills',
-        backgroundColor: 'rgba(129, 140, 248, 0.6)',
-        borderColor: '#4F46E5',
-        pointBackgroundColor: '#4F46E5',
+        label: 'Current Skills',
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        borderColor: 'rgb(99, 102, 241)',
+        pointBackgroundColor: 'rgb(99, 102, 241)',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgb(99, 102, 241)'
+      },
+      {
+        data: [0, 0, 0, 0, 0],
+        label: 'Previous Assessment',
+        backgroundColor: 'rgba(209, 213, 219, 0.2)',
+        borderColor: 'rgb(209, 213, 219)',
+        pointBackgroundColor: 'rgb(209, 213, 219)',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgb(209, 213, 219)',
+        borderDash: [5, 5]
       }
     ]
   };
@@ -63,13 +75,36 @@ export class DashboardComponent implements OnInit {
     datasets: [
       {
         data: [0, 0, 0, 0, 0],
-        label: 'Score',
-        backgroundColor: '#818CF8',
-        borderRadius: 4
+        label: 'Your Score',
+        backgroundColor: [
+          'rgba(99, 102, 241, 0.8)',
+          'rgba(79, 70, 229, 0.8)',
+          'rgba(124, 58, 237, 0.8)',
+          'rgba(139, 92, 246, 0.8)',
+          'rgba(167, 139, 250, 0.8)'
+        ],
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: [
+          'rgb(99, 102, 241)',
+          'rgb(79, 70, 229)',
+          'rgb(124, 58, 237)',
+          'rgb(139, 92, 246)',
+          'rgb(167, 139, 250)'
+        ]
+      },
+      {
+        data: [70, 75, 80, 72, 68],
+        label: 'Industry Average',
+        backgroundColor: 'rgba(209, 213, 219, 0.5)',
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'rgb(209, 213, 219)'
       }
     ]
   };
 
+  // Performance trend data
   performanceImprovementData: ChartData<'line'> = {
     labels: [],
     datasets: []
@@ -83,8 +118,41 @@ export class DashboardComponent implements OnInit {
         min: 0,
         max: 100,
         ticks: {
-          stepSize: 20
+          stepSize: 20,
+          backdropColor: 'transparent'
+        },
+        grid: {
+          color: 'rgba(229, 231, 235, 0.5)'
+        },
+        angleLines: {
+          color: 'rgba(229, 231, 235, 0.5)'
+        },
+        pointLabels: {
+          font: {
+            size: 12,
+            weight: "bold"
+          }
         }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          pointStyleWidth: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(249, 250, 251, 0.9)',
+        titleColor: '#111827',
+        bodyColor: '#374151',
+        borderColor: 'rgba(229, 231, 235, 1)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
+        usePointStyle: true
       }
     }
   };
@@ -95,7 +163,49 @@ export class DashboardComponent implements OnInit {
     scales: {
       y: {
         min: 0,
-        max: 100
+        max: 100,
+        grid: {
+          color: 'rgba(243, 244, 246, 1)'
+        },
+        ticks: {
+          stepSize: 20
+        },
+        title: {
+          display: true,
+          text: 'Score',
+          font: {
+            weight: "bold"
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          font: {
+            weight: "bold"
+          }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          pointStyleWidth: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(249, 250, 251, 0.9)',
+        titleColor: '#111827',
+        bodyColor: '#374151',
+        borderColor: 'rgba(229, 231, 235, 1)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6
       }
     }
   };
@@ -107,27 +217,68 @@ export class DashboardComponent implements OnInit {
       y: {
         min: 0,
         max: 100,
+        grid: {
+          color: 'rgba(243, 244, 246, 1)'
+        },
+        ticks: {
+          stepSize: 20
+        },
         title: {
           display: true,
-          text: 'Performance Score'
+          text: 'Performance Score',
+          font: {
+            weight: "bold"
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          font: {
+            weight: "bold"
+          }
         }
       }
     },
     plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          pointStyleWidth: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(249, 250, 251, 0.9)',
+        titleColor: '#111827',
+        bodyColor: '#374151',
+        borderColor: 'rgba(229, 231, 235, 1)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6
+      },
       annotation: {
         annotations: {
           targetLine: {
             type: 'line',
             scaleID: 'y',
             value: 75,
-            borderColor: 'red',
-            borderWidth: 1,
-            borderDash: [3, 3],
+            borderColor: 'rgba(239, 68, 68, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
             label: {
               display: true,
               content: 'Target Score',
               position: 'end',
-              backgroundColor: 'rgba(255, 99, 132, 0.8)'
+              backgroundColor: 'rgba(239, 68, 68, 0.8)',
+              font: {
+                weight: 500, // Fixed: Use number instead of string
+                size: 12
+              },
+              padding: 6
             }
           }
         }
@@ -201,8 +352,8 @@ export class DashboardComponent implements OnInit {
   }
 
   startNewInterview(): void {
-    this.authService.getUserProfile().subscribe(
-      (profile) => {
+    this.authService.getUserProfile().subscribe({
+      next: (profile) => {
         if (profile) {
           this.userId = profile.id;
           console.log('Navigating to interview setup with user ID:', this.userId);
@@ -212,11 +363,11 @@ export class DashboardComponent implements OnInit {
           this.router.navigate(['/login']);
         }
       },
-      (error) => {
+      error: (error) => {
         console.error('Error loading profile:', error);
         this.router.navigate(['/login']);
       }
-    );
+    });
   }
 
   loadInterviewData(): void {
@@ -227,8 +378,8 @@ export class DashboardComponent implements OnInit {
 
     this.isLoading = true;
 
-    this.interviewService.getUserInterviews(this.userId).subscribe(
-      sessions => {
+    this.interviewService.getUserInterviews(this.userId).subscribe({
+      next: (sessions) => {
         this.interviewSessions = sessions;
         this.isLoading = false;
 
@@ -260,15 +411,40 @@ export class DashboardComponent implements OnInit {
           }));
 
         console.log("Loaded interviews:", this.recentInterviews);
+
+        // Load performance and skills data after loading interviews
+        this.loadPerformanceSummary();
+        this.loadSkillsData();
       },
-      error => {
+      error: (error) => {
         console.error('Error loading interview sessions:', error);
         this.isLoading = false;
         this.setError('Could not load interview data. Please try again later.');
         this.loadSampleData();
       }
-    );
+    });
   }
+
+  loadSkillsData(): void {
+    if (!this.userId) return;
+
+    this.interviewService.getUserSkillPerformance(this.userId).subscribe({
+      next: (skillData: PerformanceData[]) => {
+        if (skillData && skillData.length > 0) {
+          console.log('Skills data loaded successfully:', skillData);
+          this.processSkillData(skillData);
+          this.processSkillImprovements(skillData);
+          this.processPerformanceImprovementData(skillData);
+        } else {
+          console.log('No skills data available');
+        }
+      },
+      error: (error) => {
+        console.error('Error loading skills data:', error);
+      }
+    });
+  }
+
   viewInterviewDetails(interviewId: number) {
     this.router.navigate(['/interviews', interviewId]);
   }
@@ -278,6 +454,8 @@ export class DashboardComponent implements OnInit {
       this.interviewService.deleteInterview(sessionId).subscribe({
         next: (response) => {
           console.log(`Interview session ${sessionId} deleted successfully.`);
+          // Reload data after deletion
+          this.loadInterviewData();
         },
         error: (err) => {
           console.error('Error deleting interview session:', err);
@@ -289,6 +467,32 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  loadPerformanceSummary(): void {
+    if (!this.userId) return;
+
+    this.interviewService.getOverallPerformanceData(this.userId).subscribe({
+      next: (summary) => {
+        console.log('Performance summary loaded:', summary);
+        this.updatePerformanceSummary(summary);
+
+        if (summary.topicPerformance && summary.topicPerformance.length > 0) {
+          this.topicPerformanceData.labels = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
+          this.topicPerformanceData.datasets[0].data = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.score);
+        }
+
+        if (summary.performanceTrend && summary.performanceTrend.length > 0) {
+          this.performanceData = summary.performanceTrend.map((item: PerformanceTrendItem) => ({
+            month: item.month,
+            score: item.score
+          }));
+        }
+      },
+      error: (error) => {
+        console.error('Error loading performance summary:', error);
+        this.setError('Could not load performance summary data.');
+      }
+    });
+  }
 
   updatePerformanceSummary(summary: any): void {
     if (summary.successRate !== undefined) {
@@ -307,34 +511,15 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  loadPerformanceSummary(): void {
-    if (!this.userId) return;
-
-    this.interviewService.getOverallPerformanceData(this.userId).subscribe(
-      summary => {
-        this.updatePerformanceSummary(summary);
-
-        if (summary.topicPerformance) {
-          this.topicPerformanceData.labels = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
-          this.topicPerformanceData.datasets[0].data = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.score);
-        }
-
-        if (summary.performanceTrend) {
-          this.performanceData = summary.performanceTrend.map((item: PerformanceTrendItem) => ({
-            month: item.month,
-            score: item.score
-          }));
-        }
-      },
-      error => {
-        console.error('Error loading performance summary:', error);
-        this.setError('Could not load performance summary data.');
-      }
-    );
-  }
-
   private processSkillData(skillData: PerformanceData[]): void {
+    if (!skillData || skillData.length === 0) {
+      console.log('No skill data to process');
+      return;
+    }
+
     const skills = skillData.map(skill => skill.skillName);
+
+    // Get latest scores for each skill
     const latestScores = skillData.map(skill => {
       const sortedScores = [...skill.scores].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -342,12 +527,41 @@ export class DashboardComponent implements OnInit {
       return sortedScores.length > 0 ? sortedScores[0].score : 0;
     });
 
-    this.skillsData.labels = skills;
-    this.skillsData.datasets[0].data = latestScores;
+    // Get previous scores for each skill (second most recent)
+    const previousScores = skillData.map(skill => {
+      const sortedScores = [...skill.scores].sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      return sortedScores.length > 1 ? sortedScores[1].score : 0;
+    });
+
+    // Only update if we have actual skills and scores
+    if (skills.length > 0 && latestScores.length > 0) {
+      this.skillsData.labels = skills;
+      this.skillsData.datasets[0].data = latestScores;
+
+      // Update previous assessment data if available
+      if (previousScores.some(score => score > 0)) {
+        this.skillsData.datasets[1].data = previousScores;
+      }
+
+      console.log('Updated skills radar chart with data:', {
+        labels: skills,
+        currentData: latestScores,
+        previousData: previousScores
+      });
+    } else {
+      console.log('No skill data to update radar chart');
+    }
   }
 
   private processSkillImprovements(skillData: PerformanceData[]): void {
-    const colorMap = {
+    if (!skillData || skillData.length === 0) {
+      console.log('No skill improvement data to process');
+      return;
+    }
+
+    const colorMap: {[key: string]: string} = {
       'Problem Solving': '#8B5CF6',
       'System Design': '#EC4899',
       'Communication': '#10B981',
@@ -367,35 +581,35 @@ export class DashboardComponent implements OnInit {
 
       return {
         skill: skill.skillName,
-        color: colorMap[skill.skillName as keyof typeof colorMap] || colorMap.default,
+        color: colorMap[skill.skillName] || colorMap['default'],
         score: latestScore,
         improvement: improvement
       };
     });
+
+    console.log('Updated skill improvements:', this.skillImprovements);
   }
 
   private processPerformanceImprovementData(skillData: PerformanceData[]): void {
-    interface SessionScore {
-      sessionId: number;
-      date: string;
-      score: number;
+    if (!skillData || skillData.length === 0) {
+      console.log('No performance improvement data to process');
+      return;
     }
 
-    interface SessionMapEntry {
-      date: Date;
-      label: string;
-    }
+    // Create a map of session IDs to organize data
+    const sessionsMap = new Map<string, {
+      date: Date,
+      label: string
+    }>();
 
-    const sessionsMap = new Map<string, SessionMapEntry>();
-
+    // Find all unique session IDs across all skills
     skillData.forEach(skill => {
       skill.scores.forEach((score) => {
         const date = score.date instanceof Date ? score.date : new Date(score.date);
-        const dateStr = date.toISOString().split('T')[0];
-        const sessionId = score.sessionId;
+        const sessionId = score.sessionId.toString();
 
-        if (!sessionsMap.has(sessionId.toString())) {
-          sessionsMap.set(sessionId.toString(), {
+        if (!sessionsMap.has(sessionId)) {
+          sessionsMap.set(sessionId, {
             date,
             label: `Interview ${sessionsMap.size + 1}`
           });
@@ -403,48 +617,67 @@ export class DashboardComponent implements OnInit {
       });
     });
 
+    // Sort sessions by date
     const sortedSessions = Array.from(sessionsMap.entries())
       .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
-      .map(entry => ({id: entry[0], label: entry[1].label}));
+      .map(entry => ({
+        id: entry[0],
+        label: entry[1].label,
+        date: entry[1].date
+      }));
+
+    // Create dataset for each skill
+    const colorMap: {[key: string]: string} = {
+      'Problem Solving': '#8B5CF6',
+      'System Design': '#EC4899',
+      'Communication': '#10B981',
+      'Technical Knowledge': '#3B82F6',
+      'Code Quality': '#F59E0B',
+      'default': '#6B7280'
+    };
 
     const datasets = skillData.map(skill => {
-      const colorMap: {[key: string]: string} = {
-        'Problem Solving': '#8B5CF6',
-        'System Design': '#EC4899',
-        'Communication': '#10B981',
-        'Technical Knowledge': '#3B82F6',
-        'Code Quality': '#F59E0B'
-      };
+      const color = colorMap[skill.skillName] || colorMap['default'];
 
-      const color = colorMap[skill.skillName] || '#6B7280';
-
+      // Map scores to session IDs, keeping null for missing data points
       const data = sortedSessions.map(session => {
         const score = skill.scores.find(s => s.sessionId.toString() === session.id);
         return score ? score.score : null;
       });
 
       return {
-        data: data,
+        data,
         label: skill.skillName,
         borderColor: color,
-        backgroundColor: color + '1A',
+        backgroundColor: `${color}1A`, // Add transparency
         tension: 0.3,
-        fill: false
+        fill: false,
+        pointBackgroundColor: color,
+        pointBorderColor: '#FFF',
+        pointHoverBackgroundColor: '#FFF',
+        pointHoverBorderColor: color,
+        pointRadius: 4,
+        pointHoverRadius: 6
       };
     });
 
+    // Update chart data
     this.performanceImprovementData = {
       labels: sortedSessions.map(session => session.label),
-      datasets: datasets
+      datasets
     };
+
+    console.log('Updated performance improvement data:', this.performanceImprovementData);
   }
 
   filterInterviews(): void {
     console.log('Filtering interviews');
+    // Implementation for filtering interviews would go here
   }
 
   exportInterviews(): void {
     console.log('Exporting interviews');
+    // Implementation for exporting interviews would go here
   }
 
   private setError(message: string): void {
@@ -454,6 +687,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadSampleData(): void {
+    // Sample performance trend data
     this.performanceData = [
       { month: 'Jan', score: 75 },
       { month: 'Feb', score: 82 },
@@ -462,8 +696,7 @@ export class DashboardComponent implements OnInit {
       { month: 'May', score: 92 }
     ];
 
-
-
+    // Sample stats card data
     this.statsCards = [
       { icon: 'award', title: 'Success Rate', value: '85%', trend: '+5%', color: 'blue' },
       { icon: 'brain', title: 'Total Interviews', value: '24', trend: '+2', color: 'green' },
@@ -471,10 +704,16 @@ export class DashboardComponent implements OnInit {
       { icon: 'bar-chart', title: 'Best Score', value: '92%', trend: '+8%', color: 'yellow' }
     ];
 
+    // Sample skill radar data
+    this.skillsData.labels = ['Technical Knowledge', 'Communication', 'Problem Solving', 'System Design', 'Code Quality'];
     this.skillsData.datasets[0].data = [85, 90, 88, 82, 75];
+    this.skillsData.datasets[1].data = [80, 85, 82, 75, 70];
 
+    // Sample topic performance bar chart data
+    this.topicPerformanceData.labels = ['Algorithms', 'Database', 'System Design', 'API Design', 'Security'];
     this.topicPerformanceData.datasets[0].data = [88, 92, 75, 85, 78];
 
+    // Sample skill improvements
     this.skillImprovements = [
       { skill: 'Problem Solving', color: '#8B5CF6', score: 90, improvement: 5 },
       { skill: 'System Design', color: '#EC4899', score: 85, improvement: 7 },
@@ -483,6 +722,7 @@ export class DashboardComponent implements OnInit {
       { skill: 'Code Quality', color: '#F59E0B', score: 86, improvement: 6 }
     ];
 
+    // Sample performance improvement line chart
     this.performanceImprovementData = {
       labels: ['Interview 1', 'Interview 2', 'Interview 3', 'Interview 4', 'Latest'],
       datasets: [
@@ -492,7 +732,13 @@ export class DashboardComponent implements OnInit {
           borderColor: '#8B5CF6',
           backgroundColor: 'rgba(139, 92, 246, 0.1)',
           tension: 0.3,
-          fill: false
+          fill: false,
+          pointBackgroundColor: '#8B5CF6',
+          pointBorderColor: '#FFF',
+          pointHoverBackgroundColor: '#FFF',
+          pointHoverBorderColor: '#8B5CF6',
+          pointRadius: 4,
+          pointHoverRadius: 6
         },
         {
           data: [55, 63, 70, 78, 85],
@@ -500,7 +746,13 @@ export class DashboardComponent implements OnInit {
           borderColor: '#EC4899',
           backgroundColor: 'rgba(236, 72, 153, 0.1)',
           tension: 0.3,
-          fill: false
+          fill: false,
+          pointBackgroundColor: '#EC4899',
+          pointBorderColor: '#FFF',
+          pointHoverBackgroundColor: '#FFF',
+          pointHoverBorderColor: '#EC4899',
+          pointRadius: 4,
+          pointHoverRadius: 6
         },
         {
           data: [70, 75, 82, 88, 92],
@@ -508,7 +760,13 @@ export class DashboardComponent implements OnInit {
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.3,
-          fill: false
+          fill: false,
+          pointBackgroundColor: '#10B981',
+          pointBorderColor: '#FFF',
+          pointHoverBackgroundColor: '#FFF',
+          pointHoverBorderColor: '#10B981',
+          pointRadius: 4,
+          pointHoverRadius: 6
         },
         {
           data: [60, 68, 75, 82, 88],
@@ -516,7 +774,13 @@ export class DashboardComponent implements OnInit {
           borderColor: '#3B82F6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.3,
-          fill: false
+          fill: false,
+          pointBackgroundColor: '#3B82F6',
+          pointBorderColor: '#FFF',
+          pointHoverBackgroundColor: '#FFF',
+          pointHoverBorderColor: '#3B82F6',
+          pointRadius: 4,
+          pointHoverRadius: 6
         },
         {
           data: [58, 65, 73, 80, 86],
@@ -524,9 +788,18 @@ export class DashboardComponent implements OnInit {
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           tension: 0.3,
-          fill: false
+          fill: false,
+          pointBackgroundColor: '#F59E0B',
+          pointBorderColor: '#FFF',
+          pointHoverBackgroundColor: '#FFF',
+          pointHoverBorderColor: '#F59E0B',
+          pointRadius: 4,
+          pointHoverRadius: 6
         }
       ]
     };
+
+    // Set loading state to false since data is loaded
+    this.isLoading = false;
   }
 }

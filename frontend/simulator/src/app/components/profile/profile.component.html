@@ -1,3 +1,4 @@
+<app-header></app-header>
 <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
   <div class="border-b pb-4 mb-4">
     <h1 class="text-2xl font-bold text-emerald-500">Your Profile</h1>
@@ -23,10 +24,7 @@
             <label for="firstName" class="text-gray-600">First Name</label>
             <input type="text" id="firstName" formControlName="firstName" class="w-full p-2 border rounded-md" />
           </div>
-          <div>
-            <label for="lastName" class="text-gray-600">Last Name</label>
-            <input type="text" id="lastName" formControlName="lastName" class="w-full p-2 border rounded-md" />
-          </div>
+
         </div>
       </div>
 
@@ -36,16 +34,8 @@
         <p class="text-sm text-gray-500">Email cannot be changed. Contact support to update.</p>
       </div>
 
-      <div class="mb-6">
-        <label for="phoneNumber" class="text-gray-600">Phone Number</label>
-        <input type="tel" id="phoneNumber" formControlName="phoneNumber" class="w-full p-2 border rounded-md" />
-      </div>
 
-      <div class="mb-6">
-        <h2 class="text-lg font-semibold text-gray-700">About You</h2>
-        <label for="bio" class="text-gray-600">Bio</label>
-        <textarea id="bio" formControlName="bio" class="w-full p-2 border rounded-md" rows="4"></textarea>
-      </div>
+
 
       <div class="flex space-x-4">
         <button type="submit" class="bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition">

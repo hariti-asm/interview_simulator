@@ -35,7 +35,8 @@ public class Question {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String expectedAnswer;
-
+    @Column
+    private String skill;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     @NotNull(message = "Interview session is required")
