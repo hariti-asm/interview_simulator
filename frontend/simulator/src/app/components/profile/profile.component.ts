@@ -37,13 +37,14 @@ export class ProfileComponent implements OnInit {
   initForm(): void {
     this.profileForm = this.formBuilder.group({
       firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      phoneNumber: ['', Validators.pattern('^[0-9]{10}$')],
-      bio: ['', Validators.maxLength(500)]
+
     });
 
-    this.profileForm.get('email')?.disable();
+    this.profileForm = this.formBuilder.group({
+      firstName: ['', Validators.required],
+      email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
+    });
   }
 
   loadUserProfile(): void {
