@@ -52,7 +52,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/interview/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
 
-
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

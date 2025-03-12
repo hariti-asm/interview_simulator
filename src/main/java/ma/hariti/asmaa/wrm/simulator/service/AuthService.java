@@ -12,8 +12,8 @@ public interface AuthService {
     AuthResponse loginWithRememberMe(LoginRequest request);
     void forgotPassword(ForgotPasswordRequest request);
     void resetPassword(ResetPasswordRequest request);
-    void updatePassword(Long userId, @Valid UpdatePasswordRequest request);
     AuthResponse refreshToken(String refreshToken);
+    void changePassword(String email, UpdatePasswordRequest request);
     void registerUser(RegisterUserRequest request);
     UserProfileResponse getUserProfile(String email);
     void logout(String refreshToken);

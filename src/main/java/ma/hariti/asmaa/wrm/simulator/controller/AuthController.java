@@ -88,5 +88,13 @@ public class AuthController {
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok().build();
     }
+    @PutMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@RequestBody @Valid UpdatePasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        authService.changePassword(email, request);
+        return ResponseEntity.ok().build();
+    }
+
 
 }

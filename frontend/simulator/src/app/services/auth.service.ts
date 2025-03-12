@@ -190,4 +190,17 @@ export class AuthService {
       })
     );
   }
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/change-password`, { currentPassword, newPassword }, {
+      headers: this.getAuthHeaders(),
+      withCredentials: true
+    }).pipe(
+      tap(() => console.log('Password changed successfully')),
+      catchError(error => {
+        console.error('Change password error:', error);
+        return throwError(error);
+      })
+    );
+  }
+
 }

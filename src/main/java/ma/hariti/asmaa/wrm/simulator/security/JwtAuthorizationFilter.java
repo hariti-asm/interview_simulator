@@ -33,9 +33,20 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
+        final String requestPath = request.getRequestURI();
+
+        log.debug("Processing request for path: {}", requestPath);
+
+        if (shouldSkipAuthentication(requestPath)) {
+            log.debug("Skipping authentication for path: {}", requestPath);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
+            log.warn("No valid authorization header found for protected path: {}", requestPath);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\":\"Authentication required\",\"status\":500,\"success\":false}");
             return;
         }
 
@@ -53,15 +64,22 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                             userDetails.getAuthorities()
                     );
 
-                    log.info("Authentication principal class type: {}", userDetails.getClass().getName());
+                    log.info("Authentication successful for user: {}", userEmail);
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    filterChain.doFilter(request, response);
+                    return;
                 }
             }
+
+            log.warn("Authentication failed for JWT token");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\":\"Authentication failed\",\"status\":500,\"success\":false}");
+
         } catch (Exception e) {
             log.error("Error processing JWT token: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\":\"JWT processing error\",\"status\":500,\"success\":false}");
         }
-
-        filterChain.doFilter(request, response);
     }
 
     private boolean shouldSkipAuthentication(String requestPath) {
@@ -70,8 +88,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                         requestPath.startsWith("/api/v1/auth/login") ||
                         requestPath.startsWith("/api/v1/auth/forgot-password") ||
                         requestPath.startsWith("/api/v1/auth/reset-password") ||
-                        requestPath.startsWith("/api/v1/auth/refresh-token") )||
-                requestPath.startsWith("/api/interview/**");
-
+                        requestPath.startsWith("/api/v1/auth/refresh-token") ||
+                        requestPath.startsWith("/api/interview/") ||
+                        requestPath.startsWith("/api/users/")
+        );
     }
 }

@@ -101,11 +101,12 @@ export class InterviewService {
     return this.http.get<any>(
       `${this.apiUrl}/performance/summary`,
       {
-        headers: this.authService.getAuthHeaders(),
+        ...this.getAuthHeaders(),
         params
       }
     );
   }
+
   getSessionDetails(sessionId: number): Observable<InterviewSessionDTO> {
     return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
   }

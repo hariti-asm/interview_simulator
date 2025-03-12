@@ -476,15 +476,42 @@ export class DashboardComponent implements OnInit {
         this.updatePerformanceSummary(summary);
 
         if (summary.topicPerformance && summary.topicPerformance.length > 0) {
-          this.topicPerformanceData.labels = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name);
-          this.topicPerformanceData.datasets[0].data = summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.score);
-        }
+          // Create a new object rather than modifying in place
+          this.topicPerformanceData = {
+            labels: summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name),
+            datasets: [
+              {
+                data: summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.score),
+                label: 'Your Score',
+                backgroundColor: [
+                  'rgba(99, 102, 241, 0.8)',
+                  'rgba(79, 70, 229, 0.8)',
+                  'rgba(124, 58, 237, 0.8)',
+                  'rgba(139, 92, 246, 0.8)',
+                  'rgba(167, 139, 250, 0.8)'
+                ],
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: [
+                  'rgb(99, 102, 241)',
+                  'rgb(79, 70, 229)',
+                  'rgb(124, 58, 237)',
+                  'rgb(139, 92, 246)',
+                  'rgb(167, 139, 250)'
+                ]
+              },
+              {
+                data: [70, 75, 80, 72, 68], // Industry average
+                label: 'Industry Average',
+                backgroundColor: 'rgba(209, 213, 219, 0.5)',
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: 'rgb(209, 213, 219)'
+              }
+            ]
+          };
 
-        if (summary.performanceTrend && summary.performanceTrend.length > 0) {
-          this.performanceData = summary.performanceTrend.map((item: PerformanceTrendItem) => ({
-            month: item.month,
-            score: item.score
-          }));
+          console.log('Updated topic performance data:', this.topicPerformanceData);
         }
       },
       error: (error) => {
@@ -493,7 +520,6 @@ export class DashboardComponent implements OnInit {
       }
     });
   }
-
   updatePerformanceSummary(summary: any): void {
     if (summary.successRate !== undefined) {
       this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
@@ -511,50 +537,59 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+// Modified version of processSkillData method
   private processSkillData(skillData: PerformanceData[]): void {
     if (!skillData || skillData.length === 0) {
       console.log('No skill data to process');
       return;
     }
 
+    // Make sure we're using all available skills
     const skills = skillData.map(skill => skill.skillName);
 
-    // Get latest scores for each skill
+    // Get latest scores for each skill - make sure we have actual values
     const latestScores = skillData.map(skill => {
       const sortedScores = [...skill.scores].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      return sortedScores.length > 0 ? sortedScores[0].score : 0;
-    });
-
-    // Get previous scores for each skill (second most recent)
-    const previousScores = skillData.map(skill => {
-      const sortedScores = [...skill.scores].sort((a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      return sortedScores.length > 1 ? sortedScores[1].score : 0;
+      // Make sure we return an actual number, not undefined or null
+      return sortedScores.length > 0 ? (sortedScores[0].score || 0) : 0;
     });
 
     // Only update if we have actual skills and scores
-    if (skills.length > 0 && latestScores.length > 0) {
-      this.skillsData.labels = skills;
-      this.skillsData.datasets[0].data = latestScores;
-
-      // Update previous assessment data if available
-      if (previousScores.some(score => score > 0)) {
-        this.skillsData.datasets[1].data = previousScores;
-      }
+    if (skills.length > 0) {
+      // Update the chart data directly
+      this.skillsData = {
+        labels: skills,
+        datasets: [
+          {
+            data: latestScores,
+            label: 'Current Skills',
+            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+            borderColor: 'rgb(99, 102, 241)',
+            pointBackgroundColor: 'rgb(99, 102, 241)',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgb(99, 102, 241)'
+          },
+          {
+            data: this.skillsData.datasets[1].data, // Keep previous assessment
+            label: 'Previous Assessment',
+            backgroundColor: 'rgba(209, 213, 219, 0.2)',
+            borderColor: 'rgb(209, 213, 219)',
+            pointBackgroundColor: 'rgb(209, 213, 219)',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgb(209, 213, 219)',
+            borderDash: [5, 5]
+          }
+        ]
+      };
 
       console.log('Updated skills radar chart with data:', {
         labels: skills,
-        currentData: latestScores,
-        previousData: previousScores
+        currentData: latestScores
       });
-    } else {
-      console.log('No skill data to update radar chart');
     }
   }
-
   private processSkillImprovements(skillData: PerformanceData[]): void {
     if (!skillData || skillData.length === 0) {
       console.log('No skill improvement data to process');

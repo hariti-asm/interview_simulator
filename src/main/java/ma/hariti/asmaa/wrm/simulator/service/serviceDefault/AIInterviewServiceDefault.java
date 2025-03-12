@@ -213,7 +213,8 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
         return result;
     }
-@Override
+
+    @Override
     public Map<String, Object> getOverallPerformance(Long userId) {
         List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
         List<InterviewSessionDTO> userSessionDTOs = userSessions.stream()
@@ -221,7 +222,9 @@ public class AIInterviewServiceDefault implements AIInterviewService {
                 .toList();
 
         double overallScore = userSessionDTOs.stream()
-                .mapToDouble(InterviewSessionDTO::getFinalScore)
+                .map(InterviewSessionDTO::getFinalScore)
+                .filter(Objects::nonNull)
+                .mapToDouble(Float::doubleValue)
                 .average()
                 .orElse(0.0);
 
@@ -230,7 +233,6 @@ public class AIInterviewServiceDefault implements AIInterviewService {
                 .mapToInt(s -> s.getQuestions() != null ? s.getQuestions().size() : 0)
                 .sum();
 
-        // You need to implement this method in AIService
         String performanceAnalysis = aiService.generatePerformanceAnalysis(userSessionDTOs);
 
         Map<String, Object> result = new HashMap<>();
@@ -242,5 +244,106 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
         return result;
     }
+    @Override
+    public Map<String, Object> getOverallPerformanceData(Long userId) {
+        log.info("Fetching overall performance data for user {}", userId);
 
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+            List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
+
+            int totalInterviews = userSessions.size();
+            int totalQuestions = 0;
+            double totalScore = 0.0;
+            int answeredQuestions = 0;
+
+            Map<String, Integer> positionCounts = new HashMap<>();
+            Map<String, Double> positionScores = new HashMap<>();
+
+            for (InterviewSession session : userSessions) {
+                String position = session.getPosition();
+                positionCounts.put(position, positionCounts.getOrDefault(position, 0) + 1);
+
+                if (session.getQuestions() != null) {
+                    totalQuestions += session.getQuestions().size();
+
+                    for (Question question : session.getQuestions()) {
+                        if (question.getAnswer() != null && question.getAnswer().getScore() != null) {
+                            double score = question.getAnswer().getScore();
+                            totalScore += score;
+                            answeredQuestions++;
+
+                            positionScores.put(position,
+                                    positionScores.getOrDefault(position, 0.0) + score);
+                        }
+                    }
+                }
+            }
+
+            double overallScore = answeredQuestions > 0 ? totalScore / answeredQuestions : 0.0;
+
+            Map<String, Double> positionAverages = new HashMap<>();
+            for (String position : positionCounts.keySet()) {
+                int count = positionCounts.get(position);
+                double total = positionScores.getOrDefault(position, 0.0);
+                positionAverages.put(position, count > 0 ? total / count : 0.0);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("userId", userId);
+            result.put("username", user.getName());
+            result.put("overallScore", overallScore);
+            result.put("totalInterviews", totalInterviews);
+            result.put("totalQuestions", totalQuestions);
+            result.put("answeredQuestions", answeredQuestions);
+            result.put("positionStats", positionAverages);
+            result.put("recentSessionCount", Math.min(totalInterviews, 5));
+
+            return result;
+        } catch (Exception e) {
+            log.error("Error getting overall performance data for user {}: {}", userId, e.getMessage(), e);
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "An unexpected error occurred");
+            errorResult.put("userId", userId);
+            return errorResult;
+        }
+    }
+    private double calculateSessionScore(InterviewSession session) {
+        if (session.getQuestions() == null || session.getQuestions().isEmpty()) {
+            return 0.0;
+        }
+
+        double totalScore = 0.0;
+        int answeredQuestions = 0;
+
+        for (Question question : session.getQuestions()) {
+            if (question.getAnswer() != null && question.getAnswer().getScore() != null) {
+                totalScore += question.getAnswer().getScore();
+                answeredQuestions++;
+            }
+        }
+
+        return answeredQuestions > 0 ? totalScore / answeredQuestions : 0.0;
+    }
+
+
+    private Double calculateImprovementRate(List<InterviewSession> sessions) {
+        if (sessions.size() < 2) {
+            return null;
+        }
+
+        List<InterviewSession> sortedSessions = new ArrayList<>(sessions);
+        sortedSessions.sort(Comparator.comparing(InterviewSession::getStartTime));
+
+        double firstSessionScore = calculateSessionScore(sortedSessions.get(0));
+        double lastSessionScore = calculateSessionScore(sortedSessions.get(sortedSessions.size() - 1));
+
+        if (firstSessionScore > 0) {
+            return ((lastSessionScore - firstSessionScore) / firstSessionScore) * 100;
+        } else {
+            return lastSessionScore > 0 ? 100.0 : 0.0;
+        }
+    }
 }

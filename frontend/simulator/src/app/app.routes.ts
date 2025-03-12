@@ -10,6 +10,7 @@ import {ProfileComponent} from './components/profile/profile.component';
 import {InterviewPopupComponent} from './components/interview-popup-component/interview-popup-component.component';
 import {InterviewDetailComponent} from './components/interview-detail/interview-detail.component';
 import {AdminComponent} from './components/admin/admin.component';
+import {ChangePasswordComponent} from './components/change-password/change-password.component';
 
 export const routes: Routes = [
 
@@ -17,6 +18,7 @@ export const routes: Routes = [
   { path: 'features', component: FeaturesComponent },
   {path:'register',component:RegisterComponent},
   { path: 'testimonials', component: TestimonialsComponent },
+  {path:'change-password',component:ChangePasswordComponent},
   {
     path: 'dashboard',
     component: DashboardComponent,

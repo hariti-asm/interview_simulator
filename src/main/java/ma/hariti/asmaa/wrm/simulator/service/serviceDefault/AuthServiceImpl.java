@@ -158,19 +158,18 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password reset successful for user: {}", user.getEmail());
     }
 
-    @Override
-    public void updatePassword(Long userId, @Valid UpdatePasswordRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    public void changePassword(String email, UpdatePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new InvalidTokenException("Current password is incorrect");
+            throw new RuntimeException("Current password is incorrect");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        log.info("Password updated successfully for user ID: {}", userId);
     }
+
 
     @Override
     @Transactional

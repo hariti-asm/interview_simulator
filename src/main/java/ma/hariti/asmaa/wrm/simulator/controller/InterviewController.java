@@ -255,7 +255,6 @@ private final InterviewSessionRepository interviewSessionRepository;
 
         double averageScore = answeredQuestions > 0 ? totalScore / answeredQuestions : 0;
 
-        // Prepare feedback response
         Map<String, Object> feedback = new HashMap<>();
         feedback.put("sessionId", sessionId);
         feedback.put("position", session.getPosition());
@@ -265,9 +264,32 @@ private final InterviewSessionRepository interviewSessionRepository;
         feedback.put("answeredQuestions", answeredQuestions);
         feedback.put("totalQuestions", session.getQuestions() != null ? session.getQuestions().size() : 0);
 
-        // Could add more AI-generated feedback here
 
         return feedback;
+    }
+    @GetMapping("/performance/summary")
+    public Map<String, Object> getOverallPerformanceData(@RequestParam Long userId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("Authentication Object: {}", authentication);
+
+        if (authentication == null || authentication.getPrincipal() == null) {
+            log.error("Authentication is missing or invalid");
+            throw new IllegalStateException("Authentication required");
+        }
+
+        Object principal = authentication.getPrincipal();
+        log.info("Principal Object: {}", principal.getClass().getName());
+
+        if (!(principal instanceof UserDetailsImpl)) {
+            log.error("Unexpected principal type: {}", principal.getClass().getName());
+            throw new IllegalStateException("Authentication required");
+        }
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) principal;
+        Long authenticatedUserId = userDetails.getId();
+
+        log.info("Authenticated user ID: {}", authenticatedUserId);
+        return aiInterviewService.getOverallPerformance(userId);
     }
 
 }
