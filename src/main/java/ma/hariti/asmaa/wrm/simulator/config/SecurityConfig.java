@@ -51,6 +51,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers("/api/interview/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/users").permitAll()
+                        .requestMatchers("/api/skill").permitAll()
+
 
                         .anyRequest().authenticated()
                 )

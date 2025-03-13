@@ -128,7 +128,6 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         Question question = new Question();
         question.setContent(questionResponse.getQuestion());
         question.setExpectedAnswer(questionResponse.getExpectedAnswer());
-        question.setSkill(questionResponse.getSkill()); // Set the skill from the AI response
         question.setSession(session);
 
         Question savedQuestion = questionRepository.save(question);

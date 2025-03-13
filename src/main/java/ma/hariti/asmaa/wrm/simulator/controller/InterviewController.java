@@ -269,27 +269,6 @@ private final InterviewSessionRepository interviewSessionRepository;
     }
     @GetMapping("/performance/summary")
     public Map<String, Object> getOverallPerformanceData(@RequestParam Long userId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        log.info("Authentication Object: {}", authentication);
-
-        if (authentication == null || authentication.getPrincipal() == null) {
-            log.error("Authentication is missing or invalid");
-            throw new IllegalStateException("Authentication required");
-        }
-
-        Object principal = authentication.getPrincipal();
-        log.info("Principal Object: {}", principal.getClass().getName());
-
-        if (!(principal instanceof UserDetailsImpl)) {
-            log.error("Unexpected principal type: {}", principal.getClass().getName());
-            throw new IllegalStateException("Authentication required");
-        }
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) principal;
-        Long authenticatedUserId = userDetails.getId();
-
-        log.info("Authenticated user ID: {}", authenticatedUserId);
         return aiInterviewService.getOverallPerformance(userId);
     }
-
 }

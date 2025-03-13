@@ -6,6 +6,7 @@ import {QuestionDTO} from '../models/questiondto';
 import {AnswerDTO} from '../models/answerdto';
 import {PerformanceData} from '../models/performance-data';
 import {AuthService} from './auth.service';
+import {SelectedSkill} from '../models/selected-skill';
 
 @Injectable({
   providedIn: 'root'
@@ -29,22 +30,29 @@ export class InterviewService {
     };
   }
 
-  startInterview(position: string, specialization: string, experienceLevel: string, userId?: {
-    headers: HttpHeaders
-  }): Observable<any> {
+  startInterview(
+    position: string,
+    specialization: string,
+    experienceLevel: string,
+    skills: SelectedSkill[],
+    userId?: string
+  ): Observable<any> {
     let params = new HttpParams()
       .set('position', position)
       .set('specialization', specialization)
       .set('experienceLevel', experienceLevel);
 
     if (userId) {
-      params = params.set('userId', userId.toString());
+      params = params.set('userId', userId);
     }
 
     console.log('Starting interview with params:', params.toString());
     console.log('Using authorization token:', this.authService.getToken());
 
-    const requestBody = userId ? { userId } : null;
+    const requestBody = {
+      userId: userId || null,
+      skills: skills
+    };
 
     return this.http.post(`${this.apiUrl}/start`, requestBody, {
       ...this.getAuthHeaders(),
