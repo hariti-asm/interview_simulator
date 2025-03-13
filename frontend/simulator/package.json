@@ -21,6 +21,7 @@
     "@angular/platform-browser-dynamic": "^19.1.0",
     "@angular/router": "^19.1.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@swimlane/ngx-charts": "^22.0.0-alpha.0",
     "chart.js": "^4.4.8",
     "chartjs-plugin-annotation": "^3.1.0",
     "ng2-charts": "^4.1.1",

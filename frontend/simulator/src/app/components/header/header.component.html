@@ -7,8 +7,7 @@
         </a>
       </div>
 
-      <!-- Desktop Menu -->
-      <nav class="hidden md:flex items-center space-x-6">
+      <nav class="hidden lg:flex items-center space-x-6">
         <a routerLink="/" routerLinkActive="bg-emerald-500 text-white" [routerLinkActiveOptions]="{exact: true}"
            class="px-4 py-2 rounded-full text-gray-500 hover:text-emerald-500">Home</a>
         <a routerLink="/about" routerLinkActive="bg-emerald-500 text-white"
@@ -23,7 +22,6 @@
         <a routerLink="/testimonials" routerLinkActive="bg-emerald-500 text-white"
            class="text-gray-500 px-4 py-2 hover:text-emerald-500">Testimonial</a>
 
-        <!-- Show these items only if user is NOT logged in -->
         <ng-container *ngIf="!isLoggedIn">
           <a routerLink="/login" class="text-gray-500 px-4 py-2 hover:text-emerald-500 cursor-pointer">Login</a>
           <a routerLink="/register" class="text-gray-500 px-4 py-2 hover:text-emerald-500">Register</a>
@@ -58,11 +56,11 @@
       </nav>
 
       <button (click)="onStartInterview()"
-              class="hidden md:block bg-emerald-500 text-white px-6 py-2.5 rounded-full hover:bg-emerald-600 transition">
+              class="hidden lg:block bg-emerald-500 text-white px-6 py-2.5 rounded-full hover:bg-emerald-600 transition">
         Start Interview
       </button>
 
-      <button class="md:hidden text-gray-600 focus:outline-none" (click)="toggleMenu()">
+      <button class="lg:hidden text-gray-600 focus:outline-none" (click)="toggleMenu()">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path *ngIf="!menuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
           <path *ngIf="menuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -70,7 +68,7 @@
       </button>
     </div>
 
-    <div *ngIf="menuOpen" class="md:hidden space-y-2 py-2">
+    <div *ngIf="menuOpen" class="lg:hidden space-y-2 py-2">
       <a routerLink="/" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Home</a>
       <a routerLink="/about" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">About Us</a>
       <a routerLink="/features" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Features</a>
@@ -81,7 +79,6 @@
         <a routerLink="/register" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Register</a>
       </ng-container>
 
-      <!-- Show profile options if user IS logged in (mobile) -->
       <ng-container *ngIf="isLoggedIn">
         <div class="border-t border-gray-200 pt-2 mt-2">
           <div class="px-4 py-2 font-medium text-gray-900">{{ userProfile?.name || 'User' }}</div>
