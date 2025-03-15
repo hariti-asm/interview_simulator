@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {Observable, throwError} from 'rxjs';
 
 export interface SkillDTO {
   id?: number;
@@ -34,8 +34,11 @@ export class SkillService {
   getAllSkills(): Observable<SkillDTO[]> {
     return this.http.get<SkillDTO[]>(this.apiUrl);
   }
-
   updateSkill(id: number | undefined, skill: SkillDTO): Observable<SkillDTO> {
+    if (id === undefined || id === null) {
+      return throwError(() => new Error('Invalid skill ID: ID cannot be undefined or null'));
+    }
+
     return this.http.put<SkillDTO>(`${this.apiUrl}/${id}`, skill);
   }
 

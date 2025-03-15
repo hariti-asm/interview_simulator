@@ -108,6 +108,7 @@ export class AdminComponent implements OnInit {
   getAllUsers(): void {
     this.adminService.getAllUsers().subscribe(users => {
       this.users = users;
+      this.currentPage=1;
       this.filterUsers();
     });
   }
@@ -126,7 +127,9 @@ export class AdminComponent implements OnInit {
     console.log('Available roles:', this.users.map(user => user.role));
 
     let filtered = [...this.users];
-
+    this.filteredUsers = filtered;
+    this.totalPages = Math.ceil(this.filteredUsers.length / this.itemsPerPage);
+    this.currentPage = 1;
     if (this.userSearchQuery) {
       const query = this.userSearchQuery.toLowerCase();
       filtered = filtered.filter(user =>
@@ -291,7 +294,7 @@ export class AdminComponent implements OnInit {
       this.updateKeywords();
       this.updatePositions();
 
-      if (this.selectedSkill.id === 0) {
+      if (this.selectedSkill.id === 0 || this.selectedSkill.id === undefined) {
         this.skillService.createSkill(this.selectedSkill).subscribe({
           next: () => {
             this.getAllSkills();
@@ -340,14 +343,24 @@ export class AdminComponent implements OnInit {
   }
 
   changePage(page: number): void {
-    if (page >= 1 && (page - 1) * this.itemsPerPage < this.filteredUsers.length) {
+    if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
     }
   }
-
-  getPageNumbers(): number[] {
-    return Array.from({length: this.totalPages}, (_, i) => i + 1);
+  get pagedUsers(): UserDTO[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredUsers.length);
+    return this.filteredUsers.slice(startIndex, endIndex);
   }
+  get pagedSkills(): SkillDTO[] {
+    const startIndex = (this.skillCurrentPage - 1) * this.itemsPerPage;
+    const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredSkills.length);
+    return this.filteredSkills.slice(startIndex, endIndex);
+  }
+  getPageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
 
 
 }
