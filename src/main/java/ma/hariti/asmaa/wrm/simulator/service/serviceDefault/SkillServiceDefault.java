@@ -21,9 +21,11 @@ public class SkillServiceDefault implements SkillService {
 
     @Override
     public SkillDTO createSkill(SkillDTO skillDTO) {
-        Skill skill = skillMapper.toEntity(skillDTO);
-        Skill savedSkill = skillRepository.save(skill);
-        return skillMapper.toDto(savedSkill);
+        skillDTO.setId(null);
+
+        Skill skill = SkillMapper.INSTANCE.toEntity(skillDTO);
+        skill = skillRepository.save(skill);
+        return skillMapper.toDto(skill);
     }
 
     @Override

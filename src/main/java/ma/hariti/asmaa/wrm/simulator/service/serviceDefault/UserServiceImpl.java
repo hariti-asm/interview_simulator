@@ -43,7 +43,8 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.toEntity(userDTO);
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         User savedUser = userRepository.save(user);
-        return userMapper.toDTO(savedUser);    }
+        return userMapper.toDTO(savedUser);
+    }
 
     @Override
     public UserDTO getUserById(Long id) {

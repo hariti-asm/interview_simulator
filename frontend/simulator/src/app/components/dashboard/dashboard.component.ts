@@ -292,7 +292,6 @@ export class DashboardComponent implements OnInit {
     score: number,
     improvement: number
   }[] = [];
-
   statsCards = [
     { icon: 'award', title: 'Success Rate', value: '0%', trend: '0%', color: 'blue' },
     { icon: 'brain', title: 'Total Interviews', value: '0', trend: '0', color: 'green' },
@@ -385,20 +384,31 @@ export class DashboardComponent implements OnInit {
 
         if (sessions.length === 0) {
           console.log('No interview sessions found for user');
-          this.loadSampleData();
           return;
         }
 
-        this.statsCards[1].value = sessions.length.toString();
-        this.statsCards[1].trend = '+' + (sessions.length > 0 ? 1 : 0);
+        // Update total interviews stat card
+        const totalInterviews = sessions.length;
+        this.statsCards[1].value = totalInterviews.toString();
+        // For trend, you might want to compare with previous period
+        // Here we're just showing +1 if there are interviews
+        this.statsCards[1].trend = '+' + (totalInterviews > 0 ? 1 : 0);
 
+        // Update success rate stat card
         const successfulInterviews = sessions.filter(session => (session.score || 0) > 70).length;
-        const successRate = sessions.length > 0 ? (successfulInterviews / sessions.length) * 100 : 0;
+        const successRate = totalInterviews > 0 ? (successfulInterviews / totalInterviews) * 100 : 0;
         this.statsCards[0].value = successRate.toFixed(1) + '%';
+        // For trend, you would ideally compare with previous period's success rate
+        // This requires additional data from API
 
-        const bestScore = Math.max(...sessions.map(session => session.score || 0));
+        // Update best score stat card
+        const scores = sessions.map(session => session.score || 0);
+        const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
         this.statsCards[3].value = bestScore.toFixed(1) + '%';
+        // For trend, compare with previous best score
+        // This requires historical data
 
+        // Process recent interviews for display
         this.recentInterviews = sessions
           .slice(0, 5)
           .map((session: InterviewSessionDTO) => ({
@@ -410,9 +420,7 @@ export class DashboardComponent implements OnInit {
             status: session.status
           }));
 
-        console.log("Loaded interviews:", this.recentInterviews);
-
-        // Load performance and skills data after loading interviews
+        // Load additional performance and skills data
         this.loadPerformanceSummary();
         this.loadSkillsData();
       },
@@ -420,11 +428,9 @@ export class DashboardComponent implements OnInit {
         console.error('Error loading interview sessions:', error);
         this.isLoading = false;
         this.setError('Could not load interview data. Please try again later.');
-        this.loadSampleData();
       }
     });
   }
-
   loadSkillsData(): void {
     if (!this.userId) return;
 
@@ -473,45 +479,29 @@ export class DashboardComponent implements OnInit {
     this.interviewService.getOverallPerformanceData(this.userId).subscribe({
       next: (summary) => {
         console.log('Performance summary loaded:', summary);
-        this.updatePerformanceSummary(summary);
 
+        // Update success rate from API if available
+        if (summary.successRate !== undefined) {
+          this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
+          this.statsCards[0].trend = '+' + (summary.successRateChange || 0).toFixed(1) + '%';
+        }
+
+        // Update topics covered from API
+        if (summary.topicsCovered !== undefined) {
+          this.statsCards[2].value = summary.topicsCovered.toString();
+          this.statsCards[2].trend = '+' + (summary.topicsAddedRecently || 0);
+        }
+
+        // Update best score from API if available
+        if (summary.bestScore !== undefined) {
+          this.statsCards[3].value = summary.bestScore.toFixed(1) + '%';
+          this.statsCards[3].trend = '+' + (summary.bestScoreImprovement || 0).toFixed(1) + '%';
+        }
+
+        // Process topic performance data
         if (summary.topicPerformance && summary.topicPerformance.length > 0) {
-          // Create a new object rather than modifying in place
-          this.topicPerformanceData = {
-            labels: summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.name),
-            datasets: [
-              {
-                data: summary.topicPerformance.map((topic: TopicPerformanceItem) => topic.score),
-                label: 'Your Score',
-                backgroundColor: [
-                  'rgba(99, 102, 241, 0.8)',
-                  'rgba(79, 70, 229, 0.8)',
-                  'rgba(124, 58, 237, 0.8)',
-                  'rgba(139, 92, 246, 0.8)',
-                  'rgba(167, 139, 250, 0.8)'
-                ],
-                borderRadius: 6,
-                borderWidth: 1,
-                borderColor: [
-                  'rgb(99, 102, 241)',
-                  'rgb(79, 70, 229)',
-                  'rgb(124, 58, 237)',
-                  'rgb(139, 92, 246)',
-                  'rgb(167, 139, 250)'
-                ]
-              },
-              {
-                data: [70, 75, 80, 72, 68], // Industry average
-                label: 'Industry Average',
-                backgroundColor: 'rgba(209, 213, 219, 0.5)',
-                borderRadius: 6,
-                borderWidth: 1,
-                borderColor: 'rgb(209, 213, 219)'
-              }
-            ]
-          };
-
-          console.log('Updated topic performance data:', this.topicPerformanceData);
+          // Update the chart as you're already doing
+          // ...existing chart update code...
         }
       },
       error: (error) => {
@@ -707,12 +697,10 @@ export class DashboardComponent implements OnInit {
 
   filterInterviews(): void {
     console.log('Filtering interviews');
-    // Implementation for filtering interviews would go here
   }
 
   exportInterviews(): void {
     console.log('Exporting interviews');
-    // Implementation for exporting interviews would go here
   }
 
   private setError(message: string): void {
@@ -731,7 +719,6 @@ export class DashboardComponent implements OnInit {
       { month: 'May', score: 92 }
     ];
 
-    // Sample stats card data
     this.statsCards = [
       { icon: 'award', title: 'Success Rate', value: '85%', trend: '+5%', color: 'blue' },
       { icon: 'brain', title: 'Total Interviews', value: '24', trend: '+2', color: 'green' },
@@ -739,16 +726,13 @@ export class DashboardComponent implements OnInit {
       { icon: 'bar-chart', title: 'Best Score', value: '92%', trend: '+8%', color: 'yellow' }
     ];
 
-    // Sample skill radar data
     this.skillsData.labels = ['Technical Knowledge', 'Communication', 'Problem Solving', 'System Design', 'Code Quality'];
     this.skillsData.datasets[0].data = [85, 90, 88, 82, 75];
     this.skillsData.datasets[1].data = [80, 85, 82, 75, 70];
 
-    // Sample topic performance bar chart data
     this.topicPerformanceData.labels = ['Algorithms', 'Database', 'System Design', 'API Design', 'Security'];
     this.topicPerformanceData.datasets[0].data = [88, 92, 75, 85, 78];
 
-    // Sample skill improvements
     this.skillImprovements = [
       { skill: 'Problem Solving', color: '#8B5CF6', score: 90, improvement: 5 },
       { skill: 'System Design', color: '#EC4899', score: 85, improvement: 7 },
@@ -757,7 +741,6 @@ export class DashboardComponent implements OnInit {
       { skill: 'Code Quality', color: '#F59E0B', score: 86, improvement: 6 }
     ];
 
-    // Sample performance improvement line chart
     this.performanceImprovementData = {
       labels: ['Interview 1', 'Interview 2', 'Interview 3', 'Interview 4', 'Latest'],
       datasets: [

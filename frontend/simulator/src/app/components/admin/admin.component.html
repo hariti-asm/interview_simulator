@@ -63,7 +63,7 @@
 
             <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
               <h3 class="text-lg font-medium text-purple-800">Active Skills</h3>
-              <p class="text-2xl font-bold">42</p> <!-- Replace with actual data -->
+              <p class="text-2xl font-bold">{{ totalSkills }}</p> <!-- Replace with actual data -->
             </div>
           </div>
 
@@ -87,7 +87,6 @@
           </button>
         </div>
 
-        <!-- Search and filters -->
         <div class="flex flex-col sm:flex-row gap-4 mb-6">
           <div class="relative flex-grow">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -155,7 +154,6 @@
             [ngClass]="{
               'bg-blue-100 text-blue-800': user.role === 'Admin',
               'bg-green-100 text-green-800': user.role === 'User',
-              'bg-purple-100 text-purple-800': user.role === 'Manager'
             }"
             class="text-xs font-medium px-2.5 py-0.5 rounded">
             {{ user.role || 'User' }}
@@ -343,6 +341,22 @@
 
       <!-- Interviews Section -->
       <div *ngIf="activeSection === 'interviews'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+            <h3 class="text-lg font-medium text-emerald-800">Total Interviews</h3>
+            <p class="text-2xl font-bold">{{ totalInterviews }}</p>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <h3 class="text-lg font-medium text-blue-800">Most Common Position</h3>
+            <p class="text-xl ">{{ positionCounts.length ? positionCounts[positionCounts.length-1].position : 'N/A' }}</p>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+            <h3 class="text-lg font-medium text-amber-800">Average per Position</h3>
+            <p class="text-2xl font-bold">{{ positionCounts.length ? (totalInterviews / positionCounts.length).toFixed(1) : 'N/A' }}</p>
+          </div>
+        </div>
         <h2 class="text-2xl font-semibold mb-6">Interviews by Position</h2>
 
         <div class="relative h-[400px] w-full mb-8">
@@ -400,22 +414,7 @@
           </svg>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
-            <h3 class="text-lg font-medium text-emerald-800">Total Interviews</h3>
-            <p class="text-2xl font-bold">{{ totalInterviews }}</p>
-          </div>
 
-          <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
-            <h3 class="text-lg font-medium text-blue-800">Most Common Position</h3>
-            <p class="text-2xl font-bold">{{ positionCounts.length ? positionCounts[positionCounts.length-1].position : 'N/A' }}</p>
-          </div>
-
-          <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
-            <h3 class="text-lg font-medium text-amber-800">Average per Position</h3>
-            <p class="text-2xl font-bold">{{ positionCounts.length ? (totalInterviews / positionCounts.length).toFixed(1) : 'N/A' }}</p>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -423,7 +422,7 @@
     <div *ngIf="selectedUser" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Edit User</h3>
+          <h3 class="text-lg font-semibold text-gray-900">Add User</h3>
           <button (click)="closeDialog()" class="text-gray-400 hover:text-gray-500">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
@@ -437,8 +436,7 @@
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="2"/>
+                  <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
               </div>
               <input
@@ -455,8 +453,7 @@
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="2"/>
+                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
               </div>
               <input
@@ -467,6 +464,37 @@
               />
             </div>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 11c-4 0-6 2-6 6h12c0-4-2-6-6-6zM12 7a2 2 0 110-4 2 2 0 010 4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+              </div>
+              <input
+                [(ngModel)]="selectedUser.password"
+                type="password"
+                class="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                id="password"
+                placeholder="Enter password"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="role">Role</label>
+            <select
+              [(ngModel)]="selectedUser.role"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              id="role"
+            >
+              <option value="CANDIDATE">Candidate</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+
         </div>
 
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
@@ -485,6 +513,176 @@
             Save Changes
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+  <!-- Add Skill Dialog -->
+  <div *ngIf="selectedSkill" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">{{ selectedSkill.id === 0 ? 'Add' : 'Edit' }} Skill</h3>
+        <button (click)="closeDialog()" class="text-gray-400 hover:text-gray-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <!-- Name Field -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-name">Name</label>
+          <input
+            [(ngModel)]="selectedSkill.name"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-name"
+            placeholder="Enter skill name"
+          />
+        </div>
+
+        <!-- Description Field -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-description">Description</label>
+          <textarea
+            [(ngModel)]="selectedSkill.description"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-description"
+            placeholder="Enter skill description"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <!-- Category Field -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-category">Category</label>
+          <select
+            [(ngModel)]="selectedSkill.category"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-category"
+          >
+            <option value="">Select Category</option>
+            <option value="Technical">Technical</option>
+            <option value="Soft">Soft Skills</option>
+            <option value="Domain">Domain Knowledge</option>
+            <option value="Tool">Tools & Software</option>
+          </select>
+        </div>
+
+        <!-- Skill Type Field -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-type">Skill Type</label>
+          <select
+            [(ngModel)]="selectedSkill.skillType"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-type"
+          >
+            <option value="">Select Type</option>
+            <option value="Programming">Programming</option>
+            <option value="Framework">Framework</option>
+            <option value="Language">Language</option>
+            <option value="Database">Database</option>
+            <option value="Communication">Communication</option>
+            <option value="Leadership">Leadership</option>
+          </select>
+        </div>
+
+        <!-- Keywords Field (Tag Input) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-keywords">Keywords (comma
+            separated)</label>
+          <input
+            (blur)="updateKeywords()"
+            [(ngModel)]="keywordsInput"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-keywords"
+            placeholder="e.g., javascript, web development, frontend"
+          />
+          <div *ngIf="selectedSkill.keywords && selectedSkill.keywords.length > 0" class="flex flex-wrap gap-2 mt-2">
+            <div *ngFor="let keyword of selectedSkill.keywords; let i = index"
+                 class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full flex items-center">
+              {{ keyword }}
+              <button (click)="removeKeyword(i)" class="ml-1.5 text-gray-500 hover:text-gray-700">
+                <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path clip-rule="evenodd"
+                        d="M10 8.586L14.293 4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 111.414-1.414L10 8.586z"
+                        fill-rule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relevant Positions Field -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-positions">Relevant Positions (comma
+            separated)</label>
+          <input
+            (blur)="updatePositions()"
+            [(ngModel)]="positionsInput"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-positions"
+            placeholder="e.g., Frontend Developer, Full Stack Developer"
+          />
+          <div *ngIf="selectedSkill.relevantPositions && selectedSkill.relevantPositions.length > 0"
+               class="flex flex-wrap gap-2 mt-2">
+            <div *ngFor="let position of selectedSkill.relevantPositions; let i = index"
+                 class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full flex items-center">
+              {{ position }}
+              <button (click)="removePosition(i)" class="ml-1.5 text-blue-500 hover:text-blue-700">
+                <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path clip-rule="evenodd"
+                        d="M10 8.586L14.293 4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 111.414-1.414L10 8.586z"
+                        fill-rule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weight Field -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="skill-weight">
+            Weight (1-10)
+            <span class="text-xs text-gray-500 ml-1">Higher value = more important</span>
+          </label>
+          <input
+            [(ngModel)]="selectedSkill.weight"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            id="skill-weight"
+            max="10"
+            min="1"
+            placeholder="Enter skill weight"
+            type="number"
+          />
+        </div>
+
+        <!-- Active Status -->
+        <div class="flex items-center">
+          <input
+            [(ngModel)]="selectedSkill.isActive"
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            id="skill-active"
+            type="checkbox"
+          />
+          <label class="ml-2 block text-sm text-gray-900" for="skill-active">Active</label>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+        <button
+          (click)="closeDialog()"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          mat-button
+        >
+          Cancel
+        </button>
+        <button
+          (click)="saveSkill()"
+          class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+          mat-button
+        >
+          {{ selectedSkill.id === 0 ? 'Add' : 'Save' }} Skill
+        </button>
       </div>
     </div>
   </div>

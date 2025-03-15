@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable} from 'rxjs';
 
 export interface SkillDTO {
   id?: number;
@@ -19,7 +19,7 @@ export interface SkillDTO {
   providedIn: 'root'
 })
 export class SkillService {
-  private apiUrl = 'http://localhost:8083/api/skill'; // Direct URL
+  private apiUrl = 'http://localhost:8083/api/skill';
 
   constructor(private http: HttpClient) {}
 
@@ -35,7 +35,7 @@ export class SkillService {
     return this.http.get<SkillDTO[]>(this.apiUrl);
   }
 
-  updateSkill(id: number, skill: SkillDTO): Observable<SkillDTO> {
+  updateSkill(id: number | undefined, skill: SkillDTO): Observable<SkillDTO> {
     return this.http.put<SkillDTO>(`${this.apiUrl}/${id}`, skill);
   }
 
