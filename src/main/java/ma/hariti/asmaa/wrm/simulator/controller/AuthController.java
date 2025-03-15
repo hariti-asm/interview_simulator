@@ -6,10 +6,13 @@ import ma.hariti.asmaa.wrm.simulator.dto.response.AuthResponse;
 import ma.hariti.asmaa.wrm.simulator.dto.response.UserProfileResponse;
 import ma.hariti.asmaa.wrm.simulator.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -89,12 +92,25 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
     @PutMapping("/change-password")
-    public ResponseEntity<Void> changePassword(@RequestBody @Valid UpdatePasswordRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        authService.changePassword(email, request);
-        return ResponseEntity.ok().build();
-    }
+    public ResponseEntity<?> changePassword(@RequestBody @Valid UpdatePasswordRequest request) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication.getName();
+            authService.changePassword(email, request);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.err.println("Password change error: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
 
+            String errorMessage = e.getMessage();
+            if (errorMessage != null && errorMessage.toLowerCase().contains("password is incorrect")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Current password is incorrect"));
+            }
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "An error occurred: " + e.getMessage()));
+        }
+    }
 
 }

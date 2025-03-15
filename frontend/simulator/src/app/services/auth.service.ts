@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap, BehaviorSubject, catchError, throwError, of } from 'rxjs';
+import {Observable, tap, BehaviorSubject, catchError, throwError, of, map} from 'rxjs';
 import { ForgotPasswordRequest } from '../models/forgot-password-request';
 import { ResetPasswordRequest } from '../models/reset-password-request';
 import { AuthResponse } from '../models/auth-response';
@@ -138,11 +138,30 @@ export class AuthService {
 
 
   getUserProfile(): Observable<any> {
-    if (this.userProfileSubject.value) {
-      return this.userProfile;
+    const token = this.getToken();
+    if (!token) {
+      return of(null);
     }
-    this.fetchUserProfile();
-    return this.userProfile;
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get<any>(`${this.baseUrl}/profile`, { headers, withCredentials: true })
+      .pipe(
+        tap(profile => {
+          console.log("Profile fetched directly:", profile);
+          this.userProfileSubject.next(profile);
+        }),
+        catchError(error => {
+          console.error('Error fetching profile:', error);
+          if (error.status === 401) {
+            this.clearAuthData();
+          }
+          return throwError(() => error);
+        })
+      );
   }
 
   private fetchUserProfile(): void {
@@ -160,16 +179,17 @@ export class AuthService {
     this.http.get<any>(`${this.baseUrl}/profile`, { headers, withCredentials: true })
       .subscribe({
         next: (profile) => {
+          console.log('Profile data fetched:', profile);
           this.userProfileSubject.next(profile);
         },
         error: (error) => {
+          console.error('Error fetching profile:', error);
           if (error.status === 401) {
             this.clearAuthData();
           }
         }
       });
   }
-
   updateUserProfile(profileData: any): Observable<any> {
     const headers = this.getAuthHeaders();
 
@@ -191,16 +211,21 @@ export class AuthService {
     );
   }
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/change-password`, { currentPassword, newPassword }, {
+    console.log('Attempting to change password');
+    const payload = { currentPassword, newPassword };
+    console.log('Request payload:', JSON.stringify(payload));
+
+    return this.http.put<void>(`${this.baseUrl}/change-password`, payload, {
       headers: this.getAuthHeaders(),
       withCredentials: true
     }).pipe(
-      tap(() => console.log('Password changed successfully')),
+      tap(response => console.log('Password change response:', response)),
       catchError(error => {
-        console.error('Change password error:', error);
-        return throwError(error);
+        console.error('Password change error details:', error);
+        return throwError(() => error);
       })
     );
   }
+
 
 }
