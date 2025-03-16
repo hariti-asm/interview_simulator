@@ -390,8 +390,6 @@ export class DashboardComponent implements OnInit {
         // Update total interviews stat card
         const totalInterviews = sessions.length;
         this.statsCards[1].value = totalInterviews.toString();
-        // For trend, you might want to compare with previous period
-        // Here we're just showing +1 if there are interviews
         this.statsCards[1].trend = '+' + (totalInterviews > 0 ? 1 : 0);
 
         // Update success rate stat card
@@ -500,8 +498,7 @@ export class DashboardComponent implements OnInit {
 
         // Process topic performance data
         if (summary.topicPerformance && summary.topicPerformance.length > 0) {
-          // Update the chart as you're already doing
-          // ...existing chart update code...
+
         }
       },
       error: (error) => {
@@ -527,7 +524,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-// Modified version of processSkillData method
   private processSkillData(skillData: PerformanceData[]): void {
     if (!skillData || skillData.length === 0) {
       console.log('No skill data to process');
@@ -546,9 +542,7 @@ export class DashboardComponent implements OnInit {
       return sortedScores.length > 0 ? (sortedScores[0].score || 0) : 0;
     });
 
-    // Only update if we have actual skills and scores
     if (skills.length > 0) {
-      // Update the chart data directly
       this.skillsData = {
         labels: skills,
         datasets: [
@@ -562,7 +556,7 @@ export class DashboardComponent implements OnInit {
             pointHoverBorderColor: 'rgb(99, 102, 241)'
           },
           {
-            data: this.skillsData.datasets[1].data, // Keep previous assessment
+            data: this.skillsData.datasets[1].data,
             label: 'Previous Assessment',
             backgroundColor: 'rgba(209, 213, 219, 0.2)',
             borderColor: 'rgb(209, 213, 219)',
@@ -710,7 +704,6 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadSampleData(): void {
-    // Sample performance trend data
     this.performanceData = [
       { month: 'Jan', score: 75 },
       { month: 'Feb', score: 82 },
@@ -817,7 +810,6 @@ export class DashboardComponent implements OnInit {
       ]
     };
 
-    // Set loading state to false since data is loaded
     this.isLoading = false;
   }
 }

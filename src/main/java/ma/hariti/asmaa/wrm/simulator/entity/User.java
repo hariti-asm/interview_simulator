@@ -43,6 +43,6 @@ public class User {
     private String resetToken;
     private LocalDateTime resetTokenExpiryDate;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<InterviewSession> sessions = new ArrayList<>();
 }

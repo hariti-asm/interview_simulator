@@ -3,10 +3,12 @@ package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 
 
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.UserDTO;
 import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.mapper.InterviewSessionMapper;
+import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +21,9 @@ import java.util.stream.Collectors;
 
 import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.mapper.UserMapper;
+import org.springframework.transaction.annotation.Transactional;
 
-
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -28,13 +31,14 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final InterviewSessionMapper interviewSessionMapper;
-
+private final InterviewSessionRepository interviewSessionRepository;
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, InterviewSessionMapper interviewSessionMapper) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, InterviewSessionMapper interviewSessionMapper, InterviewSessionRepository interviewSessionRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.interviewSessionMapper = interviewSessionMapper;
+        this.interviewSessionRepository = interviewSessionRepository;
     }
 
 
@@ -83,10 +87,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<InterviewSessionDTO> getUserInterviews(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        if (!userRepository.existsById(userId)) {
+            throw new EntityNotFoundException("User not found with id: " + userId);
+        }
 
-        List<InterviewSession> sessions = user.getSessions();
+        List<InterviewSession> sessions = interviewSessionRepository.findByUserIdOrderByStartTimeDesc(userId);
+        log.info("Found {} sessions for user ID: {}", sessions.size());
+
         return interviewSessionMapper.toDTOList(sessions);
     }
 

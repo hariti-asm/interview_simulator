@@ -1,9 +1,16 @@
 services:
   postgres:
     image: 'postgres:latest'
+    container_name: my-postgres
+    restart: always
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - 'POSTGRES_DB=interview'       # ✅ Match Spring Boot database
+      - 'POSTGRES_USER=postgres'       # ✅ Match Spring Boot username
+      - 'POSTGRES_PASSWORD=secret'     # ✅ Set a password
     ports:
-      - '5432'
+      - '5432:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:

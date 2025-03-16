@@ -42,35 +42,33 @@ private final InterviewSessionRepository interviewSessionRepository;
                 position, specialization, experienceLevel);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null) {
-            log.error("Authentication is null");
-            throw new IllegalStateException("Authentication required");
-        }
-
-        log.info("Authentication name: {}", authentication.getName());
-        log.info("Authentication principal type: {}",
-                authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null");
-
         Long userId = null;
-        Object principal = authentication.getPrincipal();
 
-        if (principal instanceof UserDetailsImpl) {
-            userId = ((UserDetailsImpl) principal).getId();
-            log.info("User ID from UserDetailsImpl: {}", userId);
-        } else {
-            log.error("Unsupported authentication principal type: {}",
-                    principal != null ? principal.getClass().getName() : "null");
-            throw new IllegalStateException("Unsupported authentication principal type");
+        if (authentication != null) {
+            log.info("Authentication name: {}", authentication.getName());
+            log.info("Authentication principal type: {}",
+                    authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null");
+
+            // Handle authenticated users
+            if (authentication.getPrincipal() instanceof UserDetailsImpl) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                userId = userDetails.getId();
+                log.info("User ID from UserDetailsImpl: {}", userId);
+            }
+            // Handle anonymous users
+            else if ("anonymousUser".equals(authentication.getPrincipal())) {
+                log.info("Anonymous user accessing interview endpoint");
+                // userId remains null for anonymous users
+            }
+            // Handle unexpected principal types
+            else {
+                log.warn("Unexpected authentication principal type: {}",
+                        authentication.getPrincipal().getClass().getName());
+                // userId remains null
+            }
         }
 
-        if (userId == null) {
-            log.error("User ID is null");
-            throw new IllegalStateException("User ID is null");
-        }
-
-        log.info("Found user ID: {}", userId);
-
+        // Call service with userId (which may be null for anonymous users)
         InterviewSessionDTO session = aiInterviewService.startNewSession(
                 userId, position, specialization, experienceLevel);
 

@@ -15,6 +15,7 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
 
     @Query("SELECT i.position, COUNT(i) FROM InterviewSession i GROUP BY i.position ORDER BY COUNT(i) ASC")
     List<Object[]> countInterviewsByPosition();
+    List<InterviewSession> findByUserIdOrderByStartTimeDesc(Long userId);
 
     List<InterviewSession> findByUserId(Long userId);
 }

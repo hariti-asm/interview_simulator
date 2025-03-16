@@ -43,14 +43,21 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
     @Transactional
     public InterviewSessionDTO startNewSession(Long userId, String position, String specialization, String experienceLevel) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-
-        log.info("Starting new session for user {} with position: {}, specialization: {}, level: {}",
-                userId, position, specialization, experienceLevel);
-
         InterviewSession session = new InterviewSession();
-        session.setUser(user);
+
+        // Handle both authenticated and anonymous users
+        if (userId != null) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+            session.setUser(user);
+            log.info("Starting new session for user {} with position: {}, specialization: {}, level: {}",
+                    userId, position, specialization, experienceLevel);
+        } else {
+            log.info("Starting new anonymous session with position: {}, specialization: {}, level: {}",
+                    position, specialization, experienceLevel);
+        }
+
+        // Set common session attributes
         session.setPosition(position);
         session.setStartTime(LocalDateTime.now());
         session.setSpecialization(specialization);
@@ -59,10 +66,10 @@ public class AIInterviewServiceDefault implements AIInterviewService {
 
         try {
             InterviewSession savedSession = sessionRepository.save(session);
-            log.info("Saved session with ID: {} for user: {}", savedSession.getId(), userId);
+            log.info("Saved session with ID: {} for user: {}", savedSession.getId(), userId != null ? userId : "anonymous");
             return sessionMapper.toDTO(savedSession);
         } catch (Exception e) {
-            log.error("Error saving session for user: {}", userId, e);
+            log.error("Error saving session for user: {}", userId != null ? userId : "anonymous", e);
             throw e;
         }
     }
