@@ -49,14 +49,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/refresh-token").permitAll()
                         .requestMatchers("/api/v1/auth/profile").authenticated()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
-                        .requestMatchers("/api/interview/**").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/users").permitAll()
-                        .requestMatchers("/api/skill").permitAll()
-                        .requestMatchers("/api/skill/**").permitAll()
-
-
                         .anyRequest().authenticated()
+
+
+
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

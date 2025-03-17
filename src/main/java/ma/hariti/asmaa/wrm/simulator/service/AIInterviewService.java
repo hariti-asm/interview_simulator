@@ -19,9 +19,9 @@ public interface AIInterviewService {
     List<QuestionDTO> getQuestionsBySessionId(Long userId, Long sessionId);
 
     InterviewSessionDTO getInterviewById(Long userId, Long sessionId);
- List<PerformanceData> getPerformanceBySkill(Long userId);
- Map<String, Object>getOverallPerformance(Long userId);
- Map<String, Object> getOverallPerformanceData(Long userId);
+   List<PerformanceData> getPerformanceBySkill(Long userId);
+   Map<String, Object>getOverallPerformance(Long userId);
+   Map<String, Object> getOverallPerformanceData(Long userId);
 
 
 

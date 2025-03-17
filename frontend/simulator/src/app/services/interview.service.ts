@@ -1,33 +1,33 @@
-import {Injectable} from '@angular/core';
-import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import {map, Observable} from 'rxjs';
-import {InterviewSessionDTO} from '../models/interview-sessiondto';
-import {QuestionDTO} from '../models/questiondto';
-import {AnswerDTO} from '../models/answerdto';
-import {PerformanceData} from '../models/performance-data';
-import {AuthService} from './auth.service';
-import {SelectedSkill} from '../models/selected-skill';
+import { Injectable } from "@angular/core"
+import {  HttpClient, HttpHeaders } from "@angular/common/http"
+import { Observable, catchError, throwError, map } from "rxjs"
+import  { InterviewSessionDTO } from "../models/interview-sessiondto"
+import  { QuestionDTO } from "../models/questiondto"
+import  { AnswerDTO } from "../models/answerdto"
+import  { PerformanceData } from "../models/performance-data"
+import  { AuthService } from "./auth.service"
+import  { SelectedSkill } from "../models/selected-skill"
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class InterviewService {
-  private apiUrl = "http://localhost:8083/api/interview";
-  private userUrl = "http://localhost:8083/api/users";
+  private apiUrl = "http://localhost:8083/api/interview"
+  private userUrl = "http://localhost:8083/api/users"
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   private getAuthHeaders() {
-    const token = this.authService.getToken();
+    const token = this.authService.getToken()
     return {
       headers: new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      })
-    };
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }),
+    }
   }
 
   startInterview(
@@ -35,129 +35,133 @@ export class InterviewService {
     specialization: string,
     experienceLevel: string,
     skills: SelectedSkill[],
-    userId?: string
+    userId?: string,
   ): Observable<any> {
-    let params = new HttpParams()
-      .set('position', position)
-      .set('specialization', specialization)
-      .set('experienceLevel', experienceLevel);
-
-    if (userId) {
-      params = params.set('userId', userId);
+    const params = {
+      position,
+      specialization,
+      experienceLevel,
+      ...(userId ? { userId } : {}),
     }
 
-    console.log('Starting interview with params:', params.toString());
-    console.log('Using authorization token:', this.authService.getToken());
+    console.log("Starting interview with params:", params)
+    console.log("Using authorization token:", this.authService.getToken())
 
     const requestBody = {
       userId: userId || null,
-      skills: skills
-    };
+      skills: skills,
+    }
 
     return this.http.post(`${this.apiUrl}/start`, requestBody, {
       ...this.getAuthHeaders(),
-      params
-    });
+      params,
+    })
   }
 
-  getNextQuestion(sessionId: number, p0: { excludedQuestions: string[]; }): Observable<QuestionDTO> {
-    const params = new HttpParams()
-      .set('sessionId', sessionId.toString());
+  getNextQuestion(sessionId: number, options: { excludedQuestions: string[] }): Observable<QuestionDTO> {
+    const params = {
+      sessionId: sessionId.toString(),
+    }
 
     return this.http.get<QuestionDTO>(`${this.apiUrl}/next-question`, {
       ...this.getAuthHeaders(),
-      params
-    });
+      params,
+    })
   }
 
   getUserInterviews(userId: number): Observable<InterviewSessionDTO[]> {
-    return this.http.get<InterviewSessionDTO[]>(`${this.userUrl}/${userId}/interviews`).pipe(
-      map(sessions =>
-        sessions.map(session => {
+    console.log(`Fetching interviews for user ${userId} with auth headers`)
+
+    // Fixed: Use the getAuthHeaders() method which returns the correct structure
+    return this.http.get<InterviewSessionDTO[]>(`${this.userUrl}/${userId}/interviews`, this.getAuthHeaders()).pipe(
+      map((sessions) => {
+        return sessions.map((session) => {
           if (session.questions && session.questions.length > 0) {
-            const questions = session.questions as QuestionDTO[];
+            const questions = session.questions as QuestionDTO[]
 
             const totalScore = questions.reduce((sum, question) => {
-              const questionScore = question.answer?.score ?? 0;
-              console.log(`Question ${question.id} score: ${questionScore}`);
+              const questionScore = question.answer?.score ?? 0
+              console.log(`Question ${question.id} score: ${questionScore}`)
 
-              return sum + questionScore;
-            }, 0);
+              return sum + questionScore
+            }, 0)
 
-            session.score = questions.length > 0 ? totalScore / questions.length : 0;
+            session.score = questions.length > 0 ? totalScore / questions.length : 0
 
             if (session.score <= 10 && session.score > 0) {
-              session.score = session.score * 10;
+              session.score = session.score * 10
             }
           } else {
-            session.score = 0;
+            session.score = 0
           }
 
-          return session;
+          return session
         })
-      )
-    );
+      }),
+      catchError((error) => {
+        console.error("Error fetching user interviews:", error)
+        return throwError(() => error)
+      }),
+    )
   }
 
-
   getPerformanceBySkill(): Observable<PerformanceData[]> {
-    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills`, this.getAuthHeaders());
+    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills`, this.getAuthHeaders())
   }
 
   getOverallPerformanceData(userId: number): Observable<any> {
-    const params = new HttpParams().set('userId', userId.toString());
-    return this.http.get<any>(
-      `${this.apiUrl}/performance/summary`,
-      {
-        ...this.getAuthHeaders(),
-        params
-      }
-    );
+    const params = {
+      userId: userId.toString(),
+    }
+
+    return this.http.get<any>(`${this.apiUrl}/performance/summary`, {
+      ...this.getAuthHeaders(),
+      params,
+    })
   }
 
   getSessionDetails(sessionId: number): Observable<InterviewSessionDTO> {
-    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
+    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders())
   }
 
   getSessionQuestions(sessionId: number): Observable<QuestionDTO[]> {
-    const params = new HttpParams().set('sessionId', sessionId.toString());
-    return this.http.get<QuestionDTO[]>(`${this.apiUrl}/session/${sessionId}/questions`, {
-      ...this.getAuthHeaders(),
-      params
-    });
+    return this.http.get<QuestionDTO[]>(`${this.apiUrl}/session/${sessionId}/questions`, this.getAuthHeaders())
   }
 
   exportSessionResults(sessionId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/session/${sessionId}/export`, {
       ...this.getAuthHeaders(),
-      responseType: 'blob'
-    });
+      responseType: "blob",
+    })
   }
 
   getInterviewFeedback(sessionId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/session/${sessionId}/feedback`, this.getAuthHeaders());
+    return this.http.get(`${this.apiUrl}/session/${sessionId}/feedback`, this.getAuthHeaders())
   }
 
   deleteInterview(sessionId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`, this.getAuthHeaders());
+    return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`, this.getAuthHeaders())
   }
 
   getInterviewById(sessionId: number): Observable<InterviewSessionDTO> {
-    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders());
+    return this.http.get<InterviewSessionDTO>(`${this.apiUrl}/${sessionId}`, this.getAuthHeaders())
   }
+
   submitAnswer(sessionId: number, questionId: number, answerData: AnswerDTO): Observable<AnswerDTO> {
     return this.http.post<AnswerDTO>(
       `${this.apiUrl}/sessions/${sessionId}/questions/${questionId}/answers`,
       answerData,
-      { headers: this.authService.getAuthHeaders() }
-    );
-  }
-  getInterviewPositionCounts(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/positions/count`, this.getAuthHeaders());
+      this.getAuthHeaders(),
+    )
   }
 
+  getInterviewPositionCounts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/positions/count`, this.getAuthHeaders())
+  }
 
   getUserSkillPerformance(userId: number): Observable<PerformanceData[]> {
-    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills/${userId}`);
+    console.log(`Fetching skill performance for user ${userId} with auth headers`)
+    return this.http.get<PerformanceData[]>(`${this.apiUrl}/performance/skills/${userId}`, this.getAuthHeaders())
   }
 }
+

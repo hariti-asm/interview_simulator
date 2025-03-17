@@ -12,6 +12,8 @@ import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
 import ma.hariti.asmaa.wrm.simulator.service.AIInterviewService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,9 +33,40 @@ public class InterviewController {
 
     private final AIInterviewService aiInterviewService;
     private final UserRepository userRepository;
-private final InterviewSessionRepository interviewSessionRepository;
+    private final InterviewSessionRepository interviewSessionRepository;
+
+
+    private Long extractAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getPrincipal() == null) {
+            log.error("No authentication found in security context");
+            throw new IllegalStateException("User must be authenticated");
+        }
+
+        log.debug("Authentication principal type: {}",
+                authentication.getPrincipal().getClass().getName());
+
+        if (authentication.getPrincipal() instanceof UserDetailsImpl) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            Long userId = userDetails.getId();
+
+            if (userId == null) {
+                log.error("UserDetailsImpl found but ID is null");
+                throw new IllegalStateException("User ID not found in authentication");
+            }
+
+            log.debug("Extracted user ID: {} from UserDetailsImpl", userId);
+            return userId;
+        }
+
+        log.error("Unsupported principal type: {}",
+                authentication.getPrincipal().getClass().getName());
+        throw new IllegalStateException("Unsupported authentication type");
+    }
+
     @PostMapping("/start")
-    public InterviewSessionDTO startNewSession(
+    public ResponseEntity<?> startNewSession(
             @RequestParam String position,
             @RequestParam String specialization,
             @RequestParam String experienceLevel
@@ -41,158 +74,171 @@ private final InterviewSessionRepository interviewSessionRepository;
         log.info("Starting new interview session with position={}, specialization={}, experienceLevel={}",
                 position, specialization, experienceLevel);
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = null;
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Starting interview for authenticated user ID: {}", userId);
 
-        if (authentication != null) {
-            log.info("Authentication name: {}", authentication.getName());
-            log.info("Authentication principal type: {}",
-                    authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null");
+            InterviewSessionDTO session = aiInterviewService.startNewSession(
+                    userId, position, specialization, experienceLevel);
 
-            // Handle authenticated users
-            if (authentication.getPrincipal() instanceof UserDetailsImpl) {
-                UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-                userId = userDetails.getId();
-                log.info("User ID from UserDetailsImpl: {}", userId);
-            }
-            // Handle anonymous users
-            else if ("anonymousUser".equals(authentication.getPrincipal())) {
-                log.info("Anonymous user accessing interview endpoint");
-                // userId remains null for anonymous users
-            }
-            // Handle unexpected principal types
-            else {
-                log.warn("Unexpected authentication principal type: {}",
-                        authentication.getPrincipal().getClass().getName());
-                // userId remains null
-            }
+            log.info("Created new interview session with id: {}", session.getId());
+            return ResponseEntity.ok(session);
+        } catch (IllegalStateException e) {
+            log.error("Authentication error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (Exception e) {
+            log.error("Error starting interview session", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to start interview session: " + e.getMessage(),
+                            "success", false, "status", 500));
         }
-
-        // Call service with userId (which may be null for anonymous users)
-        InterviewSessionDTO session = aiInterviewService.startNewSession(
-                userId, position, specialization, experienceLevel);
-
-        log.info("Created new interview session with id: {}", session.getId());
-
-        return session;
     }
 
     @PostMapping("/process-answer")
-    public AnswerDTO processAnswer(
-            @AuthenticationPrincipal UserDetails userDetails,
+    public ResponseEntity<?> processAnswer(
             @RequestParam Long sessionId,
             @RequestParam Long questionId,
             @RequestParam String answer
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return aiInterviewService.processAnswer(user.getId(), sessionId, questionId, answer);
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Processing answer for session {} question {} by user {}",
+                    sessionId, questionId, userId);
+
+            AnswerDTO result = aiInterviewService.processAnswer(userId, sessionId, questionId, answer);
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error processing answer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to process answer: " + e.getMessage(),
+                            "success", false, "status", 500));
+        }
     }
+
     @PostMapping("/sessions/{sessionId}/questions/{questionId}/answers")
-    public AnswerDTO submitAnswer(
+    public ResponseEntity<?> submitAnswer(
             @PathVariable Long sessionId,
             @PathVariable Long questionId,
-            @RequestBody AnswerDTO answerDTO,
-            @RequestParam(required = false) Long userId // Temporary solution
+            @RequestBody AnswerDTO answerDTO
     ) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long authenticatedUserId = null;
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Submitting answer for session {} question {} by user {}",
+                    sessionId, questionId, userId);
 
-        // Try to get user ID from authentication
-        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl) {
-            authenticatedUserId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
-            log.info("User ID from authentication: {}", authenticatedUserId);
+            AnswerDTO result = aiInterviewService.processAnswer(
+                    userId, sessionId, questionId, answerDTO.getContent());
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error submitting answer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to submit answer: " + e.getMessage(),
+                            "success", false, "status", 500));
         }
-        // Use provided userId parameter as fallback (TEMPORARY, NOT SECURE)
-        else if (userId != null) {
-            authenticatedUserId = userId;
-            log.warn("Using userId from request parameter: {}. This is insecure and should be temporary!", userId);
-        }
-        else {
-            log.error("Authentication failed and no userId provided");
-            throw new IllegalStateException("Authentication required");
-        }
-
-        return aiInterviewService.processAnswer(authenticatedUserId, sessionId, questionId, answerDTO.getContent());
     }
 
     @GetMapping("/next-question")
-    public QuestionDTO generateNextQuestion(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam Long sessionId
-    ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return aiInterviewService.generateNextQuestion(user.getId(), sessionId);
+    public ResponseEntity<?> generateNextQuestion(@RequestParam Long sessionId) {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Generating next question for session {} user {}", sessionId, userId);
+
+            QuestionDTO question = aiInterviewService.generateNextQuestion(userId, sessionId);
+            return ResponseEntity.ok(question);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error generating next question", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to generate question: " + e.getMessage(),
+                            "success", false, "status", 500));
+        }
     }
 
     @DeleteMapping("/sessions/{sessionId}")
-    public void deleteInterview(@PathVariable Long sessionId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<?> deleteInterview(@PathVariable Long sessionId) {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Deleting interview session {} for user {}", sessionId, userId);
 
-        if (authentication == null) {
-            log.error("Authentication is null");
-            throw new IllegalStateException("Authentication required");
+            aiInterviewService.deleteInterview(userId, sessionId);
+            return ResponseEntity.ok(Map.of("message", "Interview deleted successfully",
+                    "success", true, "status", 200));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error deleting interview", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete interview: " + e.getMessage(),
+                            "success", false, "status", 500));
         }
-
-        log.info("Authentication name: {}", authentication.getName());
-        log.info("Authentication principal type: {}",
-                authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null");
-
-        Long userId = null;
-        Object principal = authentication.getPrincipal();
-
-        if (principal instanceof UserDetailsImpl) {
-            userId = ((UserDetailsImpl) principal).getId();
-            log.info("User ID from UserDetailsImpl: {}", userId);
-        } else {
-            log.error("Unsupported authentication principal type: {}",
-                    principal != null ? principal.getClass().getName() : "null");
-            throw new IllegalStateException("Unsupported authentication principal type");
-        }
-
-        if (userId == null) {
-            log.error("User ID is null");
-            throw new IllegalStateException("User ID is null");
-        }
-
-        log.info("Deleting interview session {} for user {}", sessionId, userId);
-
-        aiInterviewService.deleteInterview(userId, sessionId);
-
-        log.info("Interview session {} deleted successfully", sessionId);
     }
 
     @GetMapping("/{sessionId}")
-    public InterviewSessionDTO getInterviewById(@PathVariable Long sessionId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<?> getInterviewById(@PathVariable Long sessionId) {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Fetching interview session {} for user {}", sessionId, userId);
 
-        if (authentication == null || authentication.getPrincipal() == null) {
-            log.error("Authentication is missing or invalid");
-            throw new IllegalStateException("Authentication required");
+            InterviewSessionDTO session = aiInterviewService.getInterviewById(userId, sessionId);
+            return ResponseEntity.ok(session);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error fetching interview", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch interview: " + e.getMessage(),
+                            "success", false, "status", 500));
         }
-
-        Object principal = authentication.getPrincipal();
-        Long userId;
-
-        if (principal instanceof UserDetailsImpl) {
-            userId = ((UserDetailsImpl) principal).getId();
-            log.info("Fetching interview session {} for authenticated user {}", sessionId, userId);
-        } else {
-            log.error("Unsupported authentication principal type: {}", principal.getClass().getName());
-            throw new IllegalStateException("Unsupported authentication principal type");
-        }
-
-        return aiInterviewService.getInterviewById(userId, sessionId);
     }
 
     @GetMapping("/session/{sessionId}/questions")
-    public List<QuestionDTO> getSessionQuestions(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long sessionId) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    public ResponseEntity<?> getSessionQuestions(@PathVariable Long sessionId) {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Fetching questions for session {} user {}", sessionId, userId);
 
-        return aiInterviewService.getQuestionsBySessionId(user.getId(), sessionId);
+            List<QuestionDTO> questions = aiInterviewService.getQuestionsBySessionId(userId, sessionId);
+            return ResponseEntity.ok(questions);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error fetching session questions", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch questions: " + e.getMessage(),
+                            "success", false, "status", 500));
+        }
     }
+
     @GetMapping("/positions/count")
     public List<Map<String, Object>> getInterviewPositionCounts() {
         List<Object[]> results = interviewSessionRepository.countInterviewsByPosition();
@@ -204,69 +250,108 @@ private final InterviewSessionRepository interviewSessionRepository;
             return map;
         }).collect(Collectors.toList());
     }
-    @GetMapping("/performance/skills/{userId}")
-    public List<PerformanceData> getUserSkillPerformance(@PathVariable Long userId) {
-        log.info("Fetching performance by skill for specified user {}", userId);
-        return aiInterviewService.getPerformanceBySkill(userId);
-    }
+
     @GetMapping("/performance/skills")
-    public List<PerformanceData> getPerformanceBySkill() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<?> getPerformanceBySkill() {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Fetching performance by skill for user {}", userId);
 
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
-            log.error("Authentication is missing or invalid");
-            throw new IllegalStateException("Authentication required");
+            List<PerformanceData> performance = aiInterviewService.getPerformanceBySkill(userId);
+            return ResponseEntity.ok(performance);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (Exception e) {
+            log.error("Error fetching performance data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch performance data: " + e.getMessage(),
+                            "success", false, "status", 500));
         }
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        Long userId = userDetails.getId();
-
-        log.info("Fetching performance by skill for user {}", userId);
-        return aiInterviewService.getPerformanceBySkill(userId);
     }
+
     @GetMapping("/session/{sessionId}/feedback")
-    public Map<String, Object> getInterviewFeedback(@PathVariable Long sessionId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<?> getInterviewFeedback(@PathVariable Long sessionId) {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Fetching feedback for session {} user {}", sessionId, userId);
 
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
-            log.error("Authentication is missing or invalid");
-            throw new IllegalStateException("Authentication required");
-        }
+            InterviewSessionDTO session = aiInterviewService.getInterviewById(userId, sessionId);
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        Long userId = userDetails.getId();
+            // Calculate average score from questions
+            double totalScore = 0;
+            int answeredQuestions = 0;
 
-        InterviewSessionDTO session = aiInterviewService.getInterviewById(userId, sessionId);
-
-        // Calculate average score from questions
-        double totalScore = 0;
-        int answeredQuestions = 0;
-
-        if (session.getQuestions() != null) {
-            for (QuestionDTO question : session.getQuestions()) {
-                if (question.getAnswer() != null && question.getAnswer().getScore() != null) {
-                    totalScore += question.getAnswer().getScore();
-                    answeredQuestions++;
+            if (session.getQuestions() != null) {
+                for (QuestionDTO question : session.getQuestions()) {
+                    if (question.getAnswer() != null && question.getAnswer().getScore() != null) {
+                        totalScore += question.getAnswer().getScore();
+                        answeredQuestions++;
+                    }
                 }
             }
+
+            double averageScore = answeredQuestions > 0 ? totalScore / answeredQuestions : 0;
+
+            Map<String, Object> feedback = new HashMap<>();
+            feedback.put("sessionId", sessionId);
+            feedback.put("position", session.getPosition());
+            feedback.put("specialization", session.getSpecialization());
+            feedback.put("experienceLevel", session.getExperienceLevel());
+            feedback.put("score", averageScore);
+            feedback.put("answeredQuestions", answeredQuestions);
+            feedback.put("totalQuestions", session.getQuestions() != null ? session.getQuestions().size() : 0);
+            feedback.put("success", true);
+            feedback.put("status", 200);
+
+            return ResponseEntity.ok(feedback);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 404));
+        } catch (Exception e) {
+            log.error("Error fetching interview feedback", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch feedback: " + e.getMessage(),
+                            "success", false, "status", 500));
         }
-
-        double averageScore = answeredQuestions > 0 ? totalScore / answeredQuestions : 0;
-
-        Map<String, Object> feedback = new HashMap<>();
-        feedback.put("sessionId", sessionId);
-        feedback.put("position", session.getPosition());
-        feedback.put("specialization", session.getSpecialization());
-        feedback.put("experienceLevel", session.getExperienceLevel());
-        feedback.put("score", averageScore);
-        feedback.put("answeredQuestions", answeredQuestions);
-        feedback.put("totalQuestions", session.getQuestions() != null ? session.getQuestions().size() : 0);
-
-
-        return feedback;
     }
+
     @GetMapping("/performance/summary")
-    public Map<String, Object> getOverallPerformanceData(@RequestParam Long userId) {
-        return aiInterviewService.getOverallPerformance(userId);
+    public ResponseEntity<?> getOverallPerformanceData() {
+        try {
+            Long userId = extractAuthenticatedUserId();
+            log.info("Fetching performance summary for user {}", userId);
+
+            Map<String, Object> performance = aiInterviewService.getOverallPerformance(userId);
+            performance.put("success", true);
+            performance.put("status", 200);
+            return ResponseEntity.ok(performance);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage(), "success", false, "status", 401));
+        } catch (Exception e) {
+            log.error("Error fetching performance summary", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch performance summary: " + e.getMessage(),
+                            "success", false, "status", 500));
+        }
+    }
+
+    @GetMapping("/performance/skills/{userId}")
+    public ResponseEntity<?> getUserSkillPerformance(@PathVariable Long userId) {
+        log.info("Fetching performance by skill for specified user {}", userId);
+        try {
+            List<PerformanceData> performance = aiInterviewService.getPerformanceBySkill(userId);
+            return ResponseEntity.ok(performance);
+        } catch (Exception e) {
+            log.error("Error fetching performance data for user {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch performance data: " + e.getMessage(),
+                            "success", false, "status", 500));
+        }
     }
 }
+

@@ -77,7 +77,7 @@ export class AuthService {
     );
   }
 
-  private clearAuthData(): void {
+  clearAuthData(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     this.authStateSubject.next(false);

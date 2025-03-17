@@ -4,9 +4,9 @@ services:
     container_name: my-postgres
     restart: always
     environment:
-      - 'POSTGRES_DB=interview'       # ✅ Match Spring Boot database
-      - 'POSTGRES_USER=postgres'       # ✅ Match Spring Boot username
-      - 'POSTGRES_PASSWORD=secret'     # ✅ Set a password
+      - 'POSTGRES_DB=interview'
+      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_PASSWORD=secret'
     ports:
       - '5432:5432'
     volumes:

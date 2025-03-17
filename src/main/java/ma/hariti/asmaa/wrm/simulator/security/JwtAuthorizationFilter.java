@@ -35,27 +35,45 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String requestPath = request.getRequestURI();
 
-        log.debug("Processing request for path: {}", requestPath);
+        // Print all request headers for debugging
+        java.util.Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            log.debug("Header: {} = {}", headerName, request.getHeader(headerName));
+        }
 
+        log.info("Processing request for path: {}", requestPath);
+
+        // Only skip authentication for public endpoints
         if (shouldSkipAuthentication(requestPath)) {
-            log.debug("Skipping authentication for path: {}", requestPath);
+            log.debug("Skipping authentication for public path: {}", requestPath);
             filterChain.doFilter(request, response);
             return;
         }
 
+        // For protected endpoints, require authentication
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("No valid authorization header found for protected path: {}", requestPath);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Authentication required\",\"status\":500,\"success\":false}");
+            sendUnauthorizedResponse(response, "Authentication required");
             return;
         }
 
         try {
             final String jwt = authHeader.substring(7);
+            log.debug("JWT token: {}", jwt);
+
             final String userEmail = jwtService.extractUsername(jwt);
+            log.info("Extracted username from token: {}", userEmail);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+
+                log.info("Loaded user details for: {}", userEmail);
+                log.info("User authorities: {}", userDetails.getAuthorities());
+
+                if (userDetails instanceof UserDetailsImpl) {
+                    log.info("User ID: {}", ((UserDetailsImpl) userDetails).getId());
+                }
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -68,18 +86,27 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     filterChain.doFilter(request, response);
                     return;
+                } else {
+                    log.warn("Token validation failed for user: {}", userEmail);
+                    sendUnauthorizedResponse(response, "Invalid token");
+                    return;
                 }
+            } else {
+                log.warn("Could not extract username from token or authentication already exists");
+                sendUnauthorizedResponse(response, "Invalid token format");
+                return;
             }
-
-            log.warn("Authentication failed for JWT token");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Authentication failed\",\"status\":500,\"success\":false}");
-
         } catch (Exception e) {
-            log.error("Error processing JWT token: {}", e.getMessage());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"JWT processing error\",\"status\":500,\"success\":false}");
+            log.error("Error processing JWT token: {}", e.getMessage(), e);
+            sendUnauthorizedResponse(response, "JWT processing error: " + e.getMessage());
+            return;
         }
+    }
+
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\":\"" + message + "\",\"status\":401,\"success\":false}");
     }
 
     private boolean shouldSkipAuthentication(String requestPath) {
@@ -88,11 +115,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                         requestPath.startsWith("/api/v1/auth/login") ||
                         requestPath.startsWith("/api/v1/auth/forgot-password") ||
                         requestPath.startsWith("/api/v1/auth/reset-password") ||
-                        requestPath.startsWith("/api/v1/auth/refresh-token") ||
-                        requestPath.startsWith("/api/interview/") ||
-                        requestPath.startsWith("/api/users") ||
-                        requestPath.startsWith("/api/skill") ||
-                        requestPath.startsWith("/api/performance/summary")
+                        requestPath.startsWith("/api/v1/auth/refresh-token")
         );
     }
 }
+
