@@ -51,11 +51,8 @@ public class Skill {
     @Column(name = "keyword")
     private List<String> keywords = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "relatedSkills")
-    private List<Question> questions = new ArrayList<>();
-
     @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InterviewSkill> interviews = new ArrayList<>();
+    private List<InterviewSkill> interviewSkills = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(

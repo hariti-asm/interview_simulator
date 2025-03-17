@@ -35,14 +35,6 @@ public class Question {
     @OneToOne(mappedBy = "question", cascade = CascadeType.ALL, optional = true)
     private Answer answer;
 
-    @ManyToMany
-    @JoinTable(
-            name = "question_skills",
-            joinColumns = @JoinColumn(name = "question_id"),
-            inverseJoinColumns = @JoinColumn(name = "skill_id")
-    )
-    private List<Skill> relatedSkills = new ArrayList<>();
-
     @Column(name = "difficulty_level")
     @Enumerated(EnumType.STRING)
     private DifficultyLevel difficultyLevel = DifficultyLevel.MEDIUM;

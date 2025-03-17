@@ -1,3 +1,4 @@
+
 package ma.hariti.asmaa.wrm.simulator.entity;
 
 import jakarta.persistence.*;
@@ -9,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -32,9 +33,13 @@ public class InterviewSession {
     @DecimalMin(value = "0.0", message = "Score cannot be negative")
     @DecimalMax(value = "100.0", message = "Score cannot exceed 100")
     private Float finalScore;
+
     @Column(length = 10000)
-    private String interviewContext;    private String specialization;
+    private String interviewContext;
+
+    private String specialization;
     private String experienceLevel;
+
     @ElementCollection
     @CollectionTable(name = "strong_points",
             joinColumns = @JoinColumn(name = "session_id"))
@@ -47,10 +52,13 @@ public class InterviewSession {
     @Column(name = "point")
     private List<String> weakPoints = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "user_id", nullable = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
     private List<Question> questions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "interview", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InterviewSkill> interviewSkills = new ArrayList<>();
 }

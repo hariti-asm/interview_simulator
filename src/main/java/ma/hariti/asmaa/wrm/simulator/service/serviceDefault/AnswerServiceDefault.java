@@ -20,9 +20,9 @@ public class AnswerServiceDefault implements AnswerService {
 
     private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
-    private static final float CONTENT_WEIGHT = 0.5f;
-    private static final float TECHNICAL_TERMS_WEIGHT = 0.3f;
-    private static final float STRUCTURE_WEIGHT = 0.2f;
+    private static final float CONTENT_WEIGHT = 0.9f;
+    private static final float TECHNICAL_TERMS_WEIGHT = 0.5f;
+    private static final float STRUCTURE_WEIGHT = 0.3f;
     private static final int MAX_SUGGESTION_LENGTH = 500;
 
     @Override
@@ -84,11 +84,115 @@ public class AnswerServiceDefault implements AnswerService {
         float technicalScore = calculateTechnicalTermsScore(userAnswer, expectedAnswer);
         float structureScore = calculateStructureScore(userAnswer);
 
-        float finalScore = (contentScore * CONTENT_WEIGHT) +
+        float baseScore = 60.0f;
+
+        float additionalScore = (contentScore * CONTENT_WEIGHT) +
                 (technicalScore * TECHNICAL_TERMS_WEIGHT) +
                 (structureScore * STRUCTURE_WEIGHT);
 
+        float finalScore = baseScore + (additionalScore * 0.4f);
+
         return Math.min(100.0f, Math.max(0.0f, finalScore));
+    }
+
+    private float calculateContentScore(String userAnswer, String expectedAnswer) {
+        Set<String> expectedKeywords = extractKeywords(expectedAnswer);
+        Set<String> userKeywords = extractKeywords(userAnswer);
+
+        if (expectedKeywords.isEmpty()) {
+            return 70.0f;
+        }
+
+        Set<String> commonWords = new HashSet<>(Arrays.asList(
+                "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "with", "by", "is", "are", "was", "were"
+        ));
+        expectedKeywords.removeAll(commonWords);
+        userKeywords.removeAll(commonWords);
+
+        if (expectedKeywords.isEmpty()) {
+            return 70.0f;
+        }
+
+        int matchingKeywords = 0;
+        for (String keyword : userKeywords) {
+            if (expectedKeywords.contains(keyword)) {
+                matchingKeywords++;
+            }
+        }
+
+        float coverage = (float) matchingKeywords / expectedKeywords.size();
+        float bonusForAdditionalKeywords = Math.min(0.2f, (float)(userKeywords.size() - matchingKeywords) / 20);
+
+        return Math.min(100.0f, (coverage * 85.0f) + (bonusForAdditionalKeywords * 100.0f));
+    }
+
+    private float calculateTechnicalTermsScore(String userAnswer, String expectedAnswer) {
+        Set<String> expectedTerms = extractTechnicalTerms(expectedAnswer);
+        Set<String> userTerms = extractTechnicalTerms(userAnswer);
+
+        if (expectedTerms.isEmpty()) {
+            return 70.0f;
+        }
+
+        int matchingTerms = 0;
+        for (String term : userTerms) {
+            if (expectedTerms.contains(term)) {
+                matchingTerms++;
+            }
+        }
+
+        float coverage = expectedTerms.isEmpty() ? 1.0f : (float) matchingTerms / expectedTerms.size();
+        float bonusForAdditionalTerms = Math.min(0.3f, (float)(userTerms.size() - matchingTerms) / 10);
+
+        return Math.min(100.0f, (coverage * 80.0f) + (bonusForAdditionalTerms * 100.0f));
+    }
+
+    private float calculateStructureScore(String answer) {
+        float score = 60.0f;
+
+        if (Pattern.compile("(?i)(first|initially|to begin with|introduction)").matcher(answer).find()) {
+            score += 10;
+        }
+
+        if (Pattern.compile("(?i)(secondly|furthermore|moreover|in addition|next)").matcher(answer).find()) {
+            score += 15;
+        }
+
+        if (Pattern.compile("(?i)(finally|in conclusion|to summarize|therefore|thus)").matcher(answer).find()) {
+            score += 15;
+        }
+
+        int wordCount = answer.split("\\s+").length;
+        if (wordCount >= 100) {
+            score += 10;
+        } else if (wordCount >= 50) {
+            score += 5;
+        }
+
+        return Math.min(100.0f, score);
+    }
+
+    private Set<String> extractKeywords(String text) {
+        return new HashSet<>(Arrays.asList(text.toLowerCase()
+                .replaceAll("[^a-zA-Z\\s]", " ")
+                .split("\\s+")));
+    }
+
+    private Set<String> extractTechnicalTerms(String text) {
+        Set<String> technicalTerms = new HashSet<>();
+        Pattern technicalPattern = Pattern.compile("(?i)(api|rest|soap|mvc|spring|hibernate|jpa|sql|database" +
+                "|algorithm|data structure|design pattern|microservice|docker|kubernetes|git" +
+                "|testing|security|authentication|cache|performance|scalability" +
+                "|java|python|javascript|html|css|node|react|angular|vue|aws|azure|cloud" +
+                "|function|method|class|object|inheritance|polymorphism|encapsulation|abstraction" +
+                "|thread|concurrency|parallelism|singleton|factory|observer|strategy|dependency" +
+                "|injection|framework|library|component|module|service|repository|controller)");
+
+        Arrays.stream(text.split("\\s+"))
+                .filter(word -> technicalPattern.matcher(word).find())
+                .forEach(technicalTerms::add);
+
+        return technicalTerms;
     }
     private String truncate(String suggestion) {
         return suggestion.length() > MAX_SUGGESTION_LENGTH
@@ -143,78 +247,6 @@ public class AnswerServiceDefault implements AnswerService {
                 .collect(Collectors.toList());
     }
 
-    private float calculateContentScore(String userAnswer, String expectedAnswer) {
-        Set<String> expectedKeywords = extractKeywords(expectedAnswer);
-        Set<String> userKeywords = extractKeywords(userAnswer);
-
-        if (expectedKeywords.isEmpty()) {
-            return 0.0f;
-        }
-
-        int matchingKeywords = 0;
-        for (String keyword : userKeywords) {
-            if (expectedKeywords.contains(keyword)) {
-                matchingKeywords++;
-            }
-        }
-
-        return (float) matchingKeywords / expectedKeywords.size() * 100;
-    }
-
-    private float calculateTechnicalTermsScore(String userAnswer, String expectedAnswer) {
-        Set<String> expectedTerms = extractTechnicalTerms(expectedAnswer);
-        Set<String> userTerms = extractTechnicalTerms(userAnswer);
-
-        if (expectedTerms.isEmpty()) {
-            return 0.0f;
-        }
-
-        int matchingTerms = 0;
-        for (String term : userTerms) {
-            if (expectedTerms.contains(term)) {
-                matchingTerms++;
-            }
-        }
-
-        return (float) matchingTerms / expectedTerms.size() * 100;
-    }
-
-    private float calculateStructureScore(String answer) {
-        float score = 0;
-
-        if (Pattern.compile("(?i)(first|initially|to begin with|introduction)").matcher(answer).find()) {
-            score += 30;
-        }
-
-        if (Pattern.compile("(?i)(secondly|furthermore|moreover|in addition|next)").matcher(answer).find()) {
-            score += 40;
-        }
-
-        if (Pattern.compile("(?i)(finally|in conclusion|to summarize|therefore|thus)").matcher(answer).find()) {
-            score += 30;
-        }
-
-        return score;
-    }
-
-    private Set<String> extractKeywords(String text) {
-        return new HashSet<>(Arrays.asList(text.toLowerCase()
-                .replaceAll("[^a-zA-Z\\s]", " ")
-                .split("\\s+")));
-    }
-
-    private Set<String> extractTechnicalTerms(String text) {
-        Set<String> technicalTerms = new HashSet<>();
-        Pattern technicalPattern = Pattern.compile("(?i)(api|rest|soap|mvc|spring|hibernate|jpa|sql|database" +
-                "|algorithm|data structure|design pattern|microservice|docker|kubernetes|git" +
-                "|testing|security|authentication|cache|performance|scalability)");
-
-        Arrays.stream(text.split("\\s+"))
-                .filter(word -> technicalPattern.matcher(word).find())
-                .forEach(technicalTerms::add);
-
-        return technicalTerms;
-    }
 
     private boolean hasProperStructure(String text) {
         int structureElements = 0;

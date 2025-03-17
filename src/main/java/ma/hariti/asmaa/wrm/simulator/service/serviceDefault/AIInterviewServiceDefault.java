@@ -8,17 +8,11 @@ import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.response.PerformanceData;
 import ma.hariti.asmaa.wrm.simulator.dto.response.QuestionResponse;
-import ma.hariti.asmaa.wrm.simulator.entity.Answer;
-import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
-import ma.hariti.asmaa.wrm.simulator.entity.Question;
-import ma.hariti.asmaa.wrm.simulator.entity.User;
+import ma.hariti.asmaa.wrm.simulator.entity.*;
 import ma.hariti.asmaa.wrm.simulator.mapper.AnswerMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.InterviewSessionMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.QuestionMapper;
-import ma.hariti.asmaa.wrm.simulator.repository.AnswerRepository;
-import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
-import ma.hariti.asmaa.wrm.simulator.repository.QuestionRepository;
-import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
+import ma.hariti.asmaa.wrm.simulator.repository.*;
 import ma.hariti.asmaa.wrm.simulator.service.AIInterviewService;
 import ma.hariti.asmaa.wrm.simulator.service.AnswerService;
 import org.springframework.stereotype.Service;
@@ -40,12 +34,12 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
     private final AnswerRepository answerRepository;
+    private final SkillRepository skillRepository;
 
     @Transactional
     public InterviewSessionDTO startNewSession(Long userId, String position, String specialization, String experienceLevel) {
         InterviewSession session = new InterviewSession();
 
-        // Handle both authenticated and anonymous users
         if (userId != null) {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
@@ -57,12 +51,20 @@ public class AIInterviewServiceDefault implements AIInterviewService {
                     position, specialization, experienceLevel);
         }
 
-        // Set common session attributes
         session.setPosition(position);
         session.setStartTime(LocalDateTime.now());
         session.setSpecialization(specialization);
         session.setExperienceLevel(experienceLevel);
         session.setInterviewContext(aiService.generateInitialContext(position, experienceLevel));
+
+        // Find relevant skills for the position and add them to the session
+        List<Skill> relevantSkills = skillRepository.findByRelevantPositionsContaining(position);
+        for (Skill skill : relevantSkills) {
+            InterviewSkill interviewSkill = new InterviewSkill();
+            interviewSkill.setInterview(session);
+            interviewSkill.setSkill(skill);
+            session.getInterviewSkills().add(interviewSkill);
+        }
 
         try {
             InterviewSession savedSession = sessionRepository.save(session);
@@ -184,7 +186,6 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     }
     @Override
     public List<PerformanceData> getPerformanceBySkill(Long userId) {
-        // You need to implement getUserInterviews method or get data directly from repository
         List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
         List<InterviewSessionDTO> userSessionDTOs = userSessions.stream()
                 .map(sessionMapper::toDTO)
