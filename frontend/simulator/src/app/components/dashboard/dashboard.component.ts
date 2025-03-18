@@ -470,43 +470,110 @@ export class DashboardComponent implements OnInit {
       });
     }
   }
-
   loadPerformanceSummary(): void {
-    if (!this.userId) return;
+    if (!this.userId) return
 
     this.interviewService.getOverallPerformanceData(this.userId).subscribe({
       next: (summary) => {
-        console.log('Performance summary loaded:', summary);
+        console.log("Performance summary loaded:", summary)
 
-        // Update success rate from API if available
-        if (summary.successRate !== undefined) {
-          this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
-          this.statsCards[0].trend = '+' + (summary.successRateChange || 0).toFixed(1) + '%';
+        // Update stats cards
+        this.statsCards[0].value = `${summary.successRate?.toFixed(1) || 0}%`
+        this.statsCards[0].trend = `+${summary.successRateChange?.toFixed(1) || 0}%`
+
+        this.statsCards[1].value = `${summary.totalInterviews || 0}`
+        this.statsCards[1].trend = "+0"
+
+        this.statsCards[2].value = `${summary.topicsCovered || 0}`
+        this.statsCards[2].trend = `+${summary.topicsAddedRecently || 0}`
+
+        this.statsCards[3].value = `${summary.bestScore?.toFixed(1) || 0}%`
+        this.statsCards[3].trend = `+${summary.bestScoreImprovement?.toFixed(1) || 0}%`
+
+        // Update performance trend chart
+        if (summary.performanceTrend && summary.performanceTrend.length > 0) {
+          this.updatePerformanceTrendChart(summary.performanceTrend)
         }
 
-        // Update topics covered from API
-        if (summary.topicsCovered !== undefined) {
-          this.statsCards[2].value = summary.topicsCovered.toString();
-          this.statsCards[2].trend = '+' + (summary.topicsAddedRecently || 0);
-        }
-
-        // Update best score from API if available
-        if (summary.bestScore !== undefined) {
-          this.statsCards[3].value = summary.bestScore.toFixed(1) + '%';
-          this.statsCards[3].trend = '+' + (summary.bestScoreImprovement || 0).toFixed(1) + '%';
-        }
-
-        // Process topic performance data
+        // Update topic performance chart
         if (summary.topicPerformance && summary.topicPerformance.length > 0) {
-
+          this.updateTopicPerformanceChart(summary.topicPerformance)
         }
+
+        this.isLoading = false
       },
       error: (error) => {
-        console.error('Error loading performance summary:', error);
-        this.setError('Could not load performance summary data.');
+        console.error("Error loading performance summary:", error)
+        this.setError("Could not load performance summary data.")
+        this.isLoading = false
+      },
+    })
+  }
+
+  updatePerformanceTrendChart(trendData: any[]): void {
+    const labels = trendData.map((item) => {
+      const date = new Date(item.date);
+      return date.toLocaleDateString();
+    });
+    const data = trendData.map((item) => item.score);
+
+    const chartData: ChartData = {
+      labels: labels,
+      datasets: [
+        {
+          data: data,
+          label: "Interview Score",
+          fill: false,
+          tension: 0.1,
+          backgroundColor: "rgba(75, 192, 192, 0.2)",
+          borderColor: "rgb(75, 192, 192)",
+          pointBackgroundColor: "rgb(75, 192, 192)",
+          pointBorderColor: "#fff",
+          pointHoverBackgroundColor: "#fff",
+          pointHoverBorderColor: "rgb(75, 192, 192)",
+        },
+      ],
+    };
+
+    const ctx = document.getElementById('performanceTrendChart') as HTMLCanvasElement;
+    new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true
       }
     });
   }
+
+  updateTopicPerformanceChart(topicData: any[]): void {
+    // Take top 8 topics for better visualization
+    const topTopics = topicData.slice(0, 8);
+
+    const topicPerformanceData = {
+      labels: topTopics.map((topic) => topic.topic),
+      datasets: [
+        {
+          data: topTopics.map((topic) => topic.score),
+          label: "Performance Score",
+          backgroundColor: "rgba(75, 192, 192, 0.2)",
+          borderColor: "rgb(75, 192, 192)",
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    // Create a new chart instead of updating an existing one
+    const ctx = document.getElementById('topicPerformanceChart') as HTMLCanvasElement;
+    new Chart(ctx, {
+      type: 'bar',
+      data: topicPerformanceData,
+      options: {
+        responsive: true
+      }
+    });
+  }
+
+
   updatePerformanceSummary(summary: any): void {
     if (summary.successRate !== undefined) {
       this.statsCards[0].value = summary.successRate.toFixed(1) + '%';
@@ -530,15 +597,12 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Make sure we're using all available skills
     const skills = skillData.map(skill => skill.skillName);
 
-    // Get latest scores for each skill - make sure we have actual values
     const latestScores = skillData.map(skill => {
       const sortedScores = [...skill.scores].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      // Make sure we return an actual number, not undefined or null
       return sortedScores.length > 0 ? (sortedScores[0].score || 0) : 0;
     });
 

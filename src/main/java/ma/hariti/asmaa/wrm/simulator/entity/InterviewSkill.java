@@ -16,12 +16,12 @@ public class InterviewSkill {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "interview_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "interview_session_id", nullable = false)
     private InterviewSession interview;
 
-    @ManyToOne
-    @JoinColumn(name = "skill_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "skill_id", nullable = false)
     private Skill skill;
 
 }
