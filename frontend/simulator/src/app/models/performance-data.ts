@@ -1,8 +1,13 @@
+export interface SkillScore {
+  sessionId: number
+  date: Date
+  score: number
+}
+
 export interface PerformanceData {
-  skillName: string;
-  scores: {
-    sessionId: number;
-    date: Date;
-    score: number;
-  }[];
+  skill: string
+  skillName: string
+  score: number
+  questionCount: number
+  scores: SkillScore[]
 }

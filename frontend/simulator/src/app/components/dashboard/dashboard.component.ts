@@ -535,18 +535,35 @@ export class DashboardComponent implements OnInit {
       ],
     };
 
-    const ctx = document.getElementById('performanceTrendChart') as HTMLCanvasElement;
-    new Chart(ctx, {
-      type: 'line',
-      data: chartData,
-      options: {
-        responsive: true
-      }
-    });
-  }
+    const canvas = document.getElementById('performanceTrendChart') as HTMLCanvasElement;
+    if (!canvas) {
+      console.error('Canvas element with ID "performanceTrendChart" not found');
+      return;
+    }
 
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+      console.log('Destroying existing performance trend chart before creating a new one');
+      existingChart.destroy();
+    }
+
+    try {
+      new Chart(canvas, {
+        type: 'line',
+        data: chartData,
+        options: this.lineChartOptions
+      });
+      console.log('Performance trend chart created successfully');
+    } catch (error) {
+      console.error('Error creating performance trend chart:', error);
+    }
+  }
   updateTopicPerformanceChart(topicData: any[]): void {
-    // Take top 8 topics for better visualization
+    if (!topicData || topicData.length === 0) {
+      console.log('No topic data available to display');
+      return;
+    }
+
     const topTopics = topicData.slice(0, 8);
 
     const topicPerformanceData = {
@@ -562,17 +579,30 @@ export class DashboardComponent implements OnInit {
       ],
     };
 
-    // Create a new chart instead of updating an existing one
-    const ctx = document.getElementById('topicPerformanceChart') as HTMLCanvasElement;
-    new Chart(ctx, {
-      type: 'bar',
-      data: topicPerformanceData,
-      options: {
-        responsive: true
-      }
-    });
-  }
+    const canvas = document.getElementById('topicPerformanceChart') as HTMLCanvasElement;
+    if (!canvas) {
+      console.error('Canvas element with ID "topicPerformanceChart" not found');
+      return;
+    }
 
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+      console.log('Destroying existing chart before creating a new one');
+      existingChart.destroy();
+    }
+
+    // Create new chart
+    try {
+      new Chart(canvas, {
+        type: 'bar',
+        data: topicPerformanceData,
+        options: this.barChartOptions
+      });
+      console.log('Topic performance chart created successfully');
+    } catch (error) {
+      console.error('Error creating topic performance chart:', error);
+    }
+  }
 
   updatePerformanceSummary(summary: any): void {
     if (summary.successRate !== undefined) {
@@ -876,4 +906,6 @@ export class DashboardComponent implements OnInit {
 
     this.isLoading = false;
   }
+
+
 }

@@ -38,7 +38,7 @@
       <div class="bg-white shadow-md rounded-lg p-6">
         <h2 class="text-lg font-semibold mb-4">Performance Trend</h2>
         <div class="h-[300px]">
-          <canvas baseChart
+          <canvas id="performanceTrendChart" baseChart
                   [options]="lineChartOptions"
                   [type]="'line'">
           </canvas>
@@ -64,6 +64,7 @@
           <canvas baseChart
                   [data]="topicPerformanceData"
                   [options]="barChartOptions"
+                  id="topicPerformanceChart"
                   [type]="'bar'">
           </canvas>
         </div>

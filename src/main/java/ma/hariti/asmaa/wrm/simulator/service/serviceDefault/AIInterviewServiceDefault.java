@@ -296,33 +296,206 @@ private final InterviewSkillRepository interviewSkillRepository;
 
     @Override
     public Map<String, Object> getOverallPerformance(Long userId) {
+        log.info("Generating comprehensive performance summary for user {}", userId);
+
         List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
-        List<InterviewSessionDTO> userSessionDTOs = userSessions.stream()
-                .map(sessionMapper::toDTO)
-                .toList();
 
-        double overallScore = userSessionDTOs.stream()
-                .map(InterviewSessionDTO::getFinalScore)
-                .filter(Objects::nonNull)
-                .mapToDouble(Float::doubleValue)
-                .average()
-                .orElse(0.0);
+        if (userSessions.isEmpty()) {
+            log.info("No interview sessions found for user {}", userId);
+            return createEmptyPerformanceSummary(userId);
+        }
 
-        int totalInterviews = userSessionDTOs.size();
-        int totalQuestions = userSessionDTOs.stream()
-                .mapToInt(s -> s.getQuestions() != null ? s.getQuestions().size() : 0)
-                .sum();
+        // Sort sessions by date for trend analysis
+        userSessions.sort(Comparator.comparing(InterviewSession::getStartTime));
 
-        String performanceAnalysis = aiService.generatePerformanceAnalysis(userSessionDTOs);
+        // Basic statistics
+        int totalInterviews = userSessions.size();
+        int totalQuestions = 0;
+        int answeredQuestions = 0;
+        double totalScore = 0.0;
 
+        // For trend analysis
+        List<Map<String, Object>> performanceTrend = new ArrayList<>();
+
+        // For topic/skill performance
+        Map<String, List<Double>> skillScores = new HashMap<>();
+        Set<String> topicsCovered = new HashSet<>();
+
+        // Best score tracking
+        double bestScore = 0.0;
+
+        // Process each interview session
+        for (InterviewSession session : userSessions) {
+            // Calculate session score
+            double sessionScore = calculateSessionScore(session);
+
+            // Update best score
+            if (sessionScore > bestScore) {
+                bestScore = sessionScore;
+            }
+
+            if (session.getQuestions() != null) {
+                totalQuestions += session.getQuestions().size();
+
+                for (Question question : session.getQuestions()) {
+                    if (question.getAnswer() != null && question.getAnswer().getScore() != null) {
+                        answeredQuestions++;
+                    }
+                }
+            }
+
+            // Get skills for this session
+            List<InterviewSkill> sessionSkills = interviewSkillRepository.findByInterviewId(session.getId());
+            for (InterviewSkill interviewSkill : sessionSkills) {
+                Skill skill = interviewSkill.getSkill();
+                topicsCovered.add(skill.getName());
+
+                // Add session score to this skill
+                skillScores.computeIfAbsent(skill.getName(), k -> new ArrayList<>())
+                        .add(sessionScore);
+            }
+
+            // Add to performance trend
+            Map<String, Object> trendPoint = new HashMap<>();
+            trendPoint.put("date", session.getStartTime());
+            trendPoint.put("score", sessionScore * 100); // Convert to percentage
+            trendPoint.put("position", session.getPosition());
+            performanceTrend.add(trendPoint);
+        }
+
+        // Calculate overall score
+        double overallScore = totalInterviews > 0 ?
+                userSessions.stream().mapToDouble(this::calculateSessionScore).average().orElse(0) : 0.0;
+
+        // Calculate success rate (sessions with score > 70%)
+        long successfulSessions = userSessions.stream()
+                .filter(s -> calculateSessionScore(s) >= 0.7)
+                .count();
+        double successRate = totalInterviews > 0 ?
+                ((double) successfulSessions / totalInterviews) * 100 : 0.0;
+
+        // Calculate improvement rate
+        Double improvementRate = calculateImprovementRate(userSessions);
+
+        // Process topic performance data
+        List<Map<String, Object>> topicPerformance = new ArrayList<>();
+        for (Map.Entry<String, List<Double>> entry : skillScores.entrySet()) {
+            String topic = entry.getKey();
+            List<Double> scores = entry.getValue();
+
+            double avgScore = scores.stream()
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+
+            Map<String, Object> topicData = new HashMap<>();
+            topicData.put("topic", topic);
+            topicData.put("score", avgScore * 100); // Convert to percentage
+            topicData.put("questionCount", scores.size());
+            topicPerformance.add(topicData);
+        }
+
+        // Sort topics by score for better visualization
+        topicPerformance.sort((a, b) ->
+                Double.compare((Double) b.get("score"), (Double) a.get("score")));
+
+        // Calculate recent improvement
+        double recentImprovement = 0.0;
+        if (performanceTrend.size() >= 2) {
+            double firstScore = (double) performanceTrend.get(0).get("score");
+            double lastScore = (double) performanceTrend.get(performanceTrend.size() - 1).get("score");
+
+            if (firstScore > 0) {
+                recentImprovement = ((lastScore - firstScore) / firstScore) * 100;
+            } else {
+                recentImprovement = lastScore > 0 ? 100.0 : 0.0;
+            }
+        }
+
+        // Build the final result
         Map<String, Object> result = new HashMap<>();
         result.put("userId", userId);
-        result.put("overallScore", overallScore);
+        result.put("overallScore", overallScore * 100); // Convert to percentage
         result.put("totalInterviews", totalInterviews);
         result.put("totalQuestions", totalQuestions);
+        result.put("answeredQuestions", answeredQuestions);
+        result.put("successRate", successRate);
+        result.put("successRateChange", improvementRate != null ? improvementRate : 0.0);
+        result.put("bestScore", bestScore * 100); // Convert to percentage
+        result.put("bestScoreImprovement", recentImprovement);
+        result.put("topicsCovered", topicsCovered.size());
+        result.put("topicsAddedRecently", calculateRecentlyAddedTopics(userSessions));
+        result.put("performanceTrend", performanceTrend);
+        result.put("topicPerformance", topicPerformance);
+
+        // Generate AI analysis of performance
+        String performanceAnalysis = aiService.generatePerformanceAnalysis(
+                sessionMapper.toDTOList(userSessions));
         result.put("analysis", performanceAnalysis);
 
         return result;
+    }
+    private Map<String, Object> createEmptyPerformanceSummary(Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", userId);
+        result.put("overallScore", 0.0);
+        result.put("totalInterviews", 0);
+        result.put("totalQuestions", 0);
+        result.put("answeredQuestions", 0);
+        result.put("successRate", 0.0);
+        result.put("successRateChange", 0.0);
+        result.put("bestScore", 0.0);
+        result.put("bestScoreImprovement", 0.0);
+        result.put("topicsCovered", 0);
+        result.put("topicsAddedRecently", 0);
+        result.put("performanceTrend", new ArrayList<>());
+        result.put("topicPerformance", new ArrayList<>());
+        result.put("analysis", "No interview data available yet. Complete your first interview to see performance analysis.");
+
+        return result;
+    }
+    private int calculateRecentlyAddedTopics(List<InterviewSession> sessions) {
+        if (sessions.size() <= 1) {
+            return 0;
+        }
+
+        // Consider the last 30 days as "recent"
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+
+        // Get all topics from sessions older than 30 days
+        Set<String> oldTopics = new HashSet<>();
+        Set<String> recentTopics = new HashSet<>();
+
+        for (InterviewSession session : sessions) {
+            if (session.getStartTime().isBefore(thirtyDaysAgo)) {
+                // Add to old topics
+                for (Question question : session.getQuestions()) {
+                    if (question.getRelatedSkills() != null) {
+                        for (Skill skill : question.getRelatedSkills()) {
+                            oldTopics.add(skill.getName());
+                        }
+                    }
+                }
+            } else {
+                // Add to recent topics
+                for (Question question : session.getQuestions()) {
+                    if (question.getRelatedSkills() != null) {
+                        for (Skill skill : question.getRelatedSkills()) {
+                            recentTopics.add(skill.getName());
+                        }
+                    }
+                }
+            }
+        }
+
+        int newTopics = 0;
+        for (String topic : recentTopics) {
+            if (!oldTopics.contains(topic)) {
+                newTopics++;
+            }
+        }
+
+        return newTopics;
     }
     @Override
     public Map<String, Object> getOverallPerformanceData(Long userId) {
