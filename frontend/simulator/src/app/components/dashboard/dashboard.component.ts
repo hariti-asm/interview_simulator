@@ -13,15 +13,6 @@ import {InterviewService} from '../../services/interview.service';
 
 Chart.register(annotationPlugin);
 
-interface PerformanceTrendItem {
-  month: string;
-  score: number;
-}
-
-interface TopicPerformanceItem {
-  name: string;
-  score: number;
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -470,46 +461,57 @@ export class DashboardComponent implements OnInit {
       });
     }
   }
+
+
   loadPerformanceSummary(): void {
-    if (!this.userId) return
+    if (!this.userId) return;
 
     this.interviewService.getOverallPerformanceData(this.userId).subscribe({
       next: (summary) => {
-        console.log("Performance summary loaded:", summary)
+        console.log("Performance summary loaded:", summary);
 
-        // Update stats cards
-        this.statsCards[0].value = `${summary.successRate?.toFixed(1) || 0}%`
-        this.statsCards[0].trend = `+${summary.successRateChange?.toFixed(1) || 0}%`
+        const scaleFactor = 100;
 
-        this.statsCards[1].value = `${summary.totalInterviews || 0}`
-        this.statsCards[1].trend = "+0"
+        this.statsCards[0].value = `${(summary.successRate || 0).toFixed(1)}%`;
+        this.statsCards[0].trend = `+${(summary.successRateChange || 0).toFixed(1)}%`;
 
-        this.statsCards[2].value = `${summary.topicsCovered || 0}`
-        this.statsCards[2].trend = `+${summary.topicsAddedRecently || 0}`
+        this.statsCards[1].value = `${summary.totalInterviews || 0}`;
+        this.statsCards[1].trend = "+0";
 
-        this.statsCards[3].value = `${summary.bestScore?.toFixed(1) || 0}%`
-        this.statsCards[3].trend = `+${summary.bestScoreImprovement?.toFixed(1) || 0}%`
+        this.statsCards[2].value = `${summary.topicsCovered || 0}`;
+        this.statsCards[2].trend = `+${summary.topicsAddedRecently || 0}`;
 
-        // Update performance trend chart
+        const scaledBestScore = summary.bestScore ? summary.bestScore / scaleFactor : 0;
+        this.statsCards[3].value = `${scaledBestScore.toFixed(1)}%`;
+
+        const scaledImprovement = summary.bestScoreImprovement ? summary.bestScoreImprovement / scaleFactor : 0;
+        this.statsCards[3].trend = `+${scaledImprovement.toFixed(1)}%`;
+
         if (summary.performanceTrend && summary.performanceTrend.length > 0) {
-          this.updatePerformanceTrendChart(summary.performanceTrend)
+          const scaledTrendData = summary.performanceTrend.map((item: { date: any; score: number }) => ({
+            ...item,
+            score: item.score / scaleFactor
+          }));
+          this.updatePerformanceTrendChart(scaledTrendData);
         }
 
-        // Update topic performance chart
         if (summary.topicPerformance && summary.topicPerformance.length > 0) {
-          this.updateTopicPerformanceChart(summary.topicPerformance)
+          const scaledTopicData = summary.topicPerformance.map((item: { topic: string; score: number }) => ({
+            ...item,
+            score: item.score / scaleFactor
+          }));
+          this.updateTopicPerformanceChart(scaledTopicData);
         }
 
-        this.isLoading = false
+        this.isLoading = false;
       },
       error: (error) => {
-        console.error("Error loading performance summary:", error)
-        this.setError("Could not load performance summary data.")
-        this.isLoading = false
+        console.error("Error loading performance summary:", error);
+        this.setError("Could not load performance summary data.");
+        this.isLoading = false;
       },
-    })
+    });
   }
-
   updatePerformanceTrendChart(trendData: any[]): void {
     const labels = trendData.map((item) => {
       const date = new Date(item.date);
