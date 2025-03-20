@@ -4,27 +4,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import jakarta.persistence.EntityNotFoundException;
 import ma.hariti.asmaa.wrm.simulator.dto.request.AnswerDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.QuestionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.response.QuestionResponse;
-import ma.hariti.asmaa.wrm.simulator.entity.Answer;
-import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
-import ma.hariti.asmaa.wrm.simulator.entity.Question;
-import ma.hariti.asmaa.wrm.simulator.entity.User;
+import ma.hariti.asmaa.wrm.simulator.entity.*;
 import ma.hariti.asmaa.wrm.simulator.mapper.AnswerMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.InterviewSessionMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.QuestionMapper;
-import ma.hariti.asmaa.wrm.simulator.repository.AnswerRepository;
-import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
-import ma.hariti.asmaa.wrm.simulator.repository.QuestionRepository;
-import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
+import ma.hariti.asmaa.wrm.simulator.repository.*;
 import ma.hariti.asmaa.wrm.simulator.service.AnswerService;
 import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.AIInterviewServiceDefault;
 import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.AIServiceDefault;
@@ -66,10 +57,13 @@ public class AIInterviewServiceDefaultTest {
 
     @Mock
     private AnswerRepository answerRepository;
+    @Mock
+    private InterviewSkillRepository interviewSkillRepository;
 
     @InjectMocks
     private AIInterviewServiceDefault aiInterviewService;
-
+    @Mock
+    private SkillRepository skillRepository;
     private User user;
     private InterviewSession session;
     private InterviewSessionDTO sessionDTO;
@@ -144,6 +138,7 @@ public class AIInterviewServiceDefaultTest {
     @DisplayName("Start New Session Tests")
     class StartNewSessionTests {
 
+
         @Test
         @DisplayName("Should start new session successfully")
         void shouldStartNewSessionSuccessfully() {
@@ -151,7 +146,18 @@ public class AIInterviewServiceDefaultTest {
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(aiService.generateInitialContext(anyString(), anyString())).thenReturn("Java developer interview context");
             when(sessionRepository.save(any(InterviewSession.class))).thenReturn(session);
+            when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionMapper.toDTO(session)).thenReturn(sessionDTO);
+
+            Skill skill = new Skill();
+            skill.setName("Java Programming");
+            skill.setCategory("Technical");
+            skill.setIsActive(true);
+            skill.setRelevantPositions(Collections.singletonList("Software Developer"));
+            List<Skill> skills = Collections.singletonList(skill);
+
+            when(skillRepository.findByRelevantPositionsContaining(anyString())).thenReturn(skills);
+            when(interviewSkillRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
             // Act
             InterviewSessionDTO result = aiInterviewService.startNewSession(1L, "Software Developer", "Java", "Mid-level");
@@ -165,6 +171,9 @@ public class AIInterviewServiceDefaultTest {
             verify(userRepository).findById(1L);
             verify(aiService).generateInitialContext("Software Developer", "Mid-level");
             verify(sessionRepository).save(any(InterviewSession.class));
+            verify(skillRepository).findByRelevantPositionsContaining("Software Developer");
+            verify(interviewSkillRepository).saveAll(anyList());
+            verify(sessionRepository).findById(session.getId());
             verify(sessionMapper).toDTO(session);
         }
 
@@ -211,7 +220,7 @@ public class AIInterviewServiceDefaultTest {
         void shouldProcessAnswerSuccessfullyWithNewAnswer() {
             // Arrange
             String userAnswer = "Polymorphism allows methods to do different things based on the object it is acting upon.";
-            question.setAnswer(null); // No existing answer
+            question.setAnswer(null);
 
             when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
             when(questionRepository.findById(1L)).thenReturn(Optional.of(question));

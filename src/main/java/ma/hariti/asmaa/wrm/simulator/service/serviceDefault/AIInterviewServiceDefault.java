@@ -102,13 +102,11 @@ private final InterviewSkillRepository interviewSkillRepository;
                     savedSession.getId(), skill.getName());
         }
 
-        // Save all interview skills using a separate repository
         if (!interviewSkills.isEmpty()) {
             interviewSkillRepository.saveAll(interviewSkills);
             log.info("Saved {} interview skills for session {}", interviewSkills.size(), savedSession.getId());
         }
 
-        // Refresh the session to ensure it has the latest data
         savedSession = sessionRepository.findById(savedSession.getId()).orElse(savedSession);
 
         return sessionMapper.toDTO(savedSession);

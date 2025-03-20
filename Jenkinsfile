@@ -46,8 +46,24 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                script {
+                withCredentials([
+                    string(credentialsId: 'openai-api-key', variable: 'OPENAI_API_KEY'),
+                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
+                    string(credentialsId: 'mail-username', variable: 'MAIL_USERNAME'),
+                    string(credentialsId: 'mail-password', variable: 'MAIL_PASSWORD'),
+                    string(credentialsId: 'mail-host', variable: 'MAIL_HOST'),
+                    string(credentialsId: 'mail-port', variable: 'MAIL_PORT')
+                ]) {
                     sh """
+                        echo "OPENAI_API_KEY=${OPENAI_API_KEY}" > .env
+                        echo "JWT_SECRET=${JWT_SECRET}" >> .env
+                        echo "DB_USERNAME=postgres" >> .env
+                        echo "DB_PASSWORD=secret" >> .env
+                        echo "MAIL_USERNAME=${MAIL_USERNAME}" >> .env
+                        echo "MAIL_PASSWORD=${MAIL_PASSWORD}" >> .env
+                        echo "MAIL_HOST=${MAIL_HOST}" >> .env
+                        echo "MAIL_PORT=${MAIL_PORT}" >> .env
+
                         docker-compose down
                         docker-compose up -d
                     """

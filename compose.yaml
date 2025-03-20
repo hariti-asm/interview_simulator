@@ -4,13 +4,40 @@ services:
     container_name: my-postgres
     restart: always
     environment:
-      - 'POSTGRES_DB=interview'
+      - 'POSTGRES_DB=simulator'
       - 'POSTGRES_USER=postgres'
       - 'POSTGRES_PASSWORD=secret'
     ports:
       - '5432:5432'
     volumes:
       - pg_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  simulator:
+    image: haritiasmae/simulator:latest
+    container_name: simulator-app
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - '8083:8083'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/simulator
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   pg_data:

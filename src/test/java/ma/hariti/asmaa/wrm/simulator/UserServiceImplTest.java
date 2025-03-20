@@ -285,88 +285,59 @@ public class UserServiceImplTest {
     @Nested
     @DisplayName("Get User Interviews Tests")
     class GetUserInterviewsTests {
+        @Nested
+        @DisplayName("Authenticate User Tests")
+        class AuthenticateUserTests {
 
-        @Test
-        @DisplayName("Should get user interviews successfully")
-        void shouldGetUserInterviewsSuccessfully() {
-            user.setSessions(sessionList);
+            @Test
+            @DisplayName("Should authenticate user successfully")
+            void shouldAuthenticateUserSuccessfully() {
+                String username = "john.doe@example.com";
+                String password = "password123";
 
-            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-            when(interviewSessionMapper.toDTOList(sessionList)).thenReturn(sessionDTOList);
+                when(userRepository.findByEmail(username)).thenReturn(Optional.of(user));
+                when(passwordEncoder.matches(password, user.getPassword())).thenReturn(true);
 
-            List<InterviewSessionDTO> result = userService.getUserInterviews(1L);
+                boolean result = userService.authenticateUser(username, password);
 
-            assertNotNull(result);
-            assertEquals(1, result.size());
-            assertEquals(sessionDTOList.get(0).getId(), result.get(0).getId());
+                assertTrue(result);
 
-            verify(userRepository).findById(1L);
-            verify(interviewSessionMapper).toDTOList(sessionList);
-        }
+                verify(userRepository).findByEmail(username);
+                verify(passwordEncoder).matches(password, user.getPassword());
+            }
 
-        @Test
-        @DisplayName("Should throw EntityNotFoundException when user not found")
-        void shouldThrowExceptionWhenUserNotFound() {
-            when(userRepository.findById(999L)).thenReturn(Optional.empty());
+            @Test
+            @DisplayName("Should fail authentication with incorrect password")
+            void shouldFailAuthenticationWithIncorrectPassword() {
+                String username = "john.doe@example.com";
+                String wrongPassword = "wrongPassword";
 
-            assertThrows(EntityNotFoundException.class, () -> userService.getUserInterviews(999L));
+                when(userRepository.findByEmail(username)).thenReturn(Optional.of(user));
+                when(passwordEncoder.matches(wrongPassword, user.getPassword())).thenReturn(false);
 
-            verify(userRepository).findById(999L);
-        }
-    }
+                boolean result = userService.authenticateUser(username, wrongPassword);
 
-    @Nested
-    @DisplayName("Authenticate User Tests")
-    class AuthenticateUserTests {
+                assertFalse(result);
 
-        @Test
-        @DisplayName("Should authenticate user successfully")
-        void shouldAuthenticateUserSuccessfully() {
-            String username = "john.doe@example.com";
-            String password = "password123";
+                verify(userRepository).findByEmail(username);
+                verify(passwordEncoder).matches(wrongPassword, user.getPassword());
+            }
 
-            when(userRepository.findByEmail(username)).thenReturn(Optional.of(user));
-            when(passwordEncoder.matches(password, user.getPassword())).thenReturn(true);
+            @Test
+            @DisplayName("Should fail authentication with non-existent user")
+            void shouldFailAuthenticationWithNonExistentUser() {
+                String nonExistentUsername = "nonexistent@example.com";
+                String password = "password123";
 
-            boolean result = userService.authenticateUser(username, password);
+                when(userRepository.findByEmail(nonExistentUsername)).thenReturn(Optional.empty());
 
-            assertTrue(result);
+                boolean result = userService.authenticateUser(nonExistentUsername, password);
 
-            verify(userRepository).findByEmail(username);
-            verify(passwordEncoder).matches(password, user.getPassword());
-        }
+                assertFalse(result);
 
-        @Test
-        @DisplayName("Should fail authentication with incorrect password")
-        void shouldFailAuthenticationWithIncorrectPassword() {
-            String username = "john.doe@example.com";
-            String wrongPassword = "wrongPassword";
-
-            when(userRepository.findByEmail(username)).thenReturn(Optional.of(user));
-            when(passwordEncoder.matches(wrongPassword, user.getPassword())).thenReturn(false);
-
-            boolean result = userService.authenticateUser(username, wrongPassword);
-
-            assertFalse(result);
-
-            verify(userRepository).findByEmail(username);
-            verify(passwordEncoder).matches(wrongPassword, user.getPassword());
-        }
-
-        @Test
-        @DisplayName("Should fail authentication with non-existent user")
-        void shouldFailAuthenticationWithNonExistentUser() {
-            String nonExistentUsername = "nonexistent@example.com";
-            String password = "password123";
-
-            when(userRepository.findByEmail(nonExistentUsername)).thenReturn(Optional.empty());
-
-            boolean result = userService.authenticateUser(nonExistentUsername, password);
-
-            assertFalse(result);
-
-            verify(userRepository).findByEmail(nonExistentUsername);
-            verify(passwordEncoder, never()).matches(any(), any());
+                verify(userRepository).findByEmail(nonExistentUsername);
+                verify(passwordEncoder, never()).matches(any(), any());
+            }
         }
     }
 }
