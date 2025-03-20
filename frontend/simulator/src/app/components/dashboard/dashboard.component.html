@@ -97,20 +97,7 @@
         </canvas>
       </div>
 
-      <!-- Add skill progress bars with improved styling -->
-      <div *ngIf="!isLoading && skillsData.labels && skillsData.labels.length > 0" class="mt-6 space-y-4">
-        <div *ngFor="let label of skillsData.labels; let i = index" class="border-b pb-3 hover:bg-gray-50 p-2 rounded transition-colors">
-          <div class="flex justify-between mb-1">
-            <span class="font-medium">{{ label }}</span>
-            <span class="text-sm font-semibold px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">{{ (skillsData.datasets[0].data[i] || 0).toFixed(1) }}%</span>
-          </div>
-          <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-            <div class="bg-purple-500 h-2.5 rounded-full transition-all duration-500"
-                 [style.width]="(skillsData.datasets[0].data[i] || 0) + '%'"></div>
-          </div>
-        </div>
-      </div>
-
+     
       <!-- Empty state with improved styling -->
       <div *ngIf="!isLoading && (!skillsData.labels || skillsData.labels.length === 0)" class="mt-6 text-center text-gray-500 p-8 border border-dashed border-gray-300 rounded-lg">
         <i class="fas fa-chart-pie text-gray-300 text-4xl mb-3"></i>
