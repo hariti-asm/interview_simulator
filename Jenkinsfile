@@ -28,7 +28,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    docker.build("${}/${APP_NAME}:${BUILD_NUMBER}")
+                    docker.build("${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}")
                 }
             }
         }
