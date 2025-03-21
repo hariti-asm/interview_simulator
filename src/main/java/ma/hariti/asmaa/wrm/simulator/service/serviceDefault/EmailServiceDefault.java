@@ -9,14 +9,14 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class EmailServiceImpl implements EmailService {
+public class EmailServiceDefault implements EmailService {
 
     private final JavaMailSender mailSender;
 
     @Value("${spring.mail.from}")
     private String fromEmail;
 
-    public EmailServiceImpl(JavaMailSender mailSender) {
+    public EmailServiceDefault(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 

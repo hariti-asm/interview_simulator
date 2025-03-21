@@ -16,16 +16,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.mapper.UserMapper;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceDefault implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -33,7 +31,7 @@ public class UserServiceImpl implements UserService {
     private final InterviewSessionMapper interviewSessionMapper;
 private final InterviewSessionRepository interviewSessionRepository;
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, InterviewSessionMapper interviewSessionMapper, InterviewSessionRepository interviewSessionRepository) {
+    public UserServiceDefault(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, InterviewSessionMapper interviewSessionMapper, InterviewSessionRepository interviewSessionRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;

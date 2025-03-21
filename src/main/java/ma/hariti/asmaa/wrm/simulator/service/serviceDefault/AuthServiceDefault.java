@@ -12,7 +12,6 @@ import ma.hariti.asmaa.wrm.simulator.entity.enums.Role;
 import ma.hariti.asmaa.wrm.simulator.exception.InvalidTokenException;
 import ma.hariti.asmaa.wrm.simulator.exception.UserNotFoundException;
 import ma.hariti.asmaa.wrm.simulator.mapper.UserMapper;
-import ma.hariti.asmaa.wrm.simulator.repository.TokenRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
 import ma.hariti.asmaa.wrm.simulator.security.JwtService;
 import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
@@ -34,7 +33,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @Transactional
-public class AuthServiceImpl implements AuthService {
+public class AuthServiceDefault implements AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -42,12 +41,12 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final UserMapper userMapper;
-    public AuthServiceImpl(AuthenticationManager authenticationManager,
-                           JwtService jwtService,
-                           UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
-                           EmailService emailService,
-                           UserMapper userMapper) {
+    public AuthServiceDefault(AuthenticationManager authenticationManager,
+                              JwtService jwtService,
+                              UserRepository userRepository,
+                              PasswordEncoder passwordEncoder,
+                              EmailService emailService,
+                              UserMapper userMapper) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userRepository = userRepository;

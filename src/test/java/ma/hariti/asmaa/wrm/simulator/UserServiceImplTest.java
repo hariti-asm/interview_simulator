@@ -16,7 +16,7 @@ import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.mapper.InterviewSessionMapper;
 import ma.hariti.asmaa.wrm.simulator.mapper.UserMapper;
 import ma.hariti.asmaa.wrm.simulator.repository.UserRepository;
-import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.UserServiceImpl;
+import ma.hariti.asmaa.wrm.simulator.service.serviceDefault.UserServiceDefault;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,7 +43,7 @@ public class UserServiceImplTest {
     private InterviewSessionMapper interviewSessionMapper;
 
     @InjectMocks
-    private UserServiceImpl userService;
+    private UserServiceDefault userService;
 
     private UserDTO userDTO;
     private User user;
