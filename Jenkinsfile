@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven 3.8.1'
-        jdk 'Java 11'
+        maven 'Maven'
+        dockerTool 'Docker'
     }
 
     environment {
@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git url: 'https://github.com/hariti-asm/interview_simulator.git', branch: 'master'
             }
         }
 
@@ -27,19 +27,17 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                script {
-                    docker.build("${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}")
-                }
+                sh "docker build -t ${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER} ."
             }
         }
 
         stage('Docker Push') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
-                        docker.image("${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}").push()
-                        docker.image("${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}").push('latest')
-                    }
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    sh "docker push ${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
+                    sh "docker tag ${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER} ${DOCKER_REGISTRY}/${APP_NAME}:latest"
+                    sh "docker push ${DOCKER_REGISTRY}/${APP_NAME}:latest"
                 }
             }
         }
@@ -80,7 +78,7 @@ pipeline {
             echo 'Pipeline failed. Check the logs for details.'
         }
         always {
-            sh 'docker system prune -f'
+            sh 'docker system prune -f || true'
         }
     }
 }
