@@ -3,9 +3,12 @@ package ma.hariti.asmaa.wrm.simulator.service.serviceDefault;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import ma.hariti.asmaa.wrm.simulator.entity.Answer;
+import ma.hariti.asmaa.wrm.simulator.entity.InterviewSession;
 import ma.hariti.asmaa.wrm.simulator.entity.Question;
 import ma.hariti.asmaa.wrm.simulator.repository.AnswerRepository;
+import ma.hariti.asmaa.wrm.simulator.repository.InterviewSessionRepository;
 import ma.hariti.asmaa.wrm.simulator.repository.QuestionRepository;
+import ma.hariti.asmaa.wrm.simulator.service.AIService;
 import ma.hariti.asmaa.wrm.simulator.service.AnswerService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,9 @@ public class AnswerServiceDefault implements AnswerService {
 
     private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
+    private final InterviewSessionRepository interviewSessionRepository;
+    private final AIService aiService;
+
     private static final float CONTENT_WEIGHT = 0.9f;
     private static final float TECHNICAL_TERMS_WEIGHT = 0.5f;
     private static final float STRUCTURE_WEIGHT = 0.3f;
@@ -41,7 +47,12 @@ public class AnswerServiceDefault implements AnswerService {
         answer.setScore(score);
         answer.setImprovementSuggestions(suggestions);
 
-        return answerRepository.save(answer);
+        Answer savedAnswer = answerRepository.save(answer);
+
+        // Update session with weak and strong points
+        updateSessionWeakAndStrongPoints(question.getSession().getId(), savedAnswer.getId());
+
+        return savedAnswer;
     }
 
     @Override
@@ -59,7 +70,12 @@ public class AnswerServiceDefault implements AnswerService {
         answer.setScore(score);
         answer.setImprovementSuggestions(suggestions);
 
-        return answerRepository.save(answer);
+        Answer savedAnswer = answerRepository.save(answer);
+
+        // Update session with weak and strong points
+        updateSessionWeakAndStrongPoints(answer.getQuestion().getSession().getId(), savedAnswer.getId());
+
+        return savedAnswer;
     }
 
     @Override
@@ -194,6 +210,7 @@ public class AnswerServiceDefault implements AnswerService {
 
         return technicalTerms;
     }
+
     private String truncate(String suggestion) {
         return suggestion.length() > MAX_SUGGESTION_LENGTH
                 ? suggestion.substring(0, MAX_SUGGESTION_LENGTH)
@@ -247,7 +264,6 @@ public class AnswerServiceDefault implements AnswerService {
                 .collect(Collectors.toList());
     }
 
-
     private boolean hasProperStructure(String text) {
         int structureElements = 0;
 
@@ -265,4 +281,41 @@ public class AnswerServiceDefault implements AnswerService {
 
         return structureElements >= 2;
     }
+
+    @Override
+    @Transactional
+    public void updateSessionWeakAndStrongPoints(Long sessionId, Long answerId) {
+        InterviewSession session = interviewSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new EntityNotFoundException("Session not found with id: " + sessionId));
+
+        Answer answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new EntityNotFoundException("Answer not found with id: " + answerId));
+
+        String userAnswer = answer.getContent();
+        String expectedAnswer = answer.getQuestion().getExpectedAnswer();
+        String questionContent = answer.getQuestion().getContent();
+
+        Map<String, List<String>> analysis = aiService.analyzeAnswer(
+                questionContent, userAnswer, expectedAnswer);
+
+        // Add new points to the session (avoiding duplicates)
+        if (analysis.containsKey("strongPoints")) {
+            for (String point : analysis.get("strongPoints")) {
+                if (!session.getStrongPoints().contains(point)) {
+                    session.getStrongPoints().add(point);
+                }
+            }
+        }
+
+        if (analysis.containsKey("weakPoints")) {
+            for (String point : analysis.get("weakPoints")) {
+                if (!session.getWeakPoints().contains(point)) {
+                    session.getWeakPoints().add(point);
+                }
+            }
+        }
+
+        interviewSessionRepository.save(session);
+    }
 }
+

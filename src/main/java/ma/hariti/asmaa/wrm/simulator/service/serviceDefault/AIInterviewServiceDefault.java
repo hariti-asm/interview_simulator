@@ -36,7 +36,8 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     private final UserRepository userRepository;
     private final AnswerRepository answerRepository;
     private final SkillRepository skillRepository;
-private final InterviewSkillRepository interviewSkillRepository;
+    private final InterviewSkillRepository interviewSkillRepository;
+
     @Transactional
     public InterviewSessionDTO startNewSession(Long userId, String position, String specialization, String experienceLevel) {
         InterviewSession session = new InterviewSession();
@@ -62,25 +63,20 @@ private final InterviewSkillRepository interviewSkillRepository;
         InterviewSession savedSession = sessionRepository.save(session);
         log.info("Saved new interview session with ID: {}", savedSession.getId());
 
-        // Now create and save interview skills separately
         List<Skill> relevantSkills = skillRepository.findByRelevantPositionsContaining(position);
         log.info("Found {} relevant skills for position: {}", relevantSkills.size(), position);
 
-        // If no skills found with the exact position, try to find some default skills
         if (relevantSkills.isEmpty()) {
             log.warn("No skills found for position '{}', trying to find default skills", position);
             relevantSkills = skillRepository.findAll();
 
-            // Filter skills that might be relevant (optional)
             if (!relevantSkills.isEmpty()) {
                 log.info("Found {} total skills to use as fallback", relevantSkills.size());
-                // Optionally limit to a reasonable number if there are too many
                 if (relevantSkills.size() > 5) {
                     relevantSkills = relevantSkills.subList(0, 5);
                 }
             } else {
                 log.warn("No skills found in the database at all");
-                // Create at least one default skill if none exist
                 Skill defaultSkill = new Skill();
                 defaultSkill.setName("General " + position + " Skills");
                 defaultSkill.setCategory("Technical");
@@ -111,6 +107,7 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         return sessionMapper.toDTO(savedSession);
     }
+
     @Transactional
     public AnswerDTO processAnswer(Long userId, Long sessionId, Long questionId, String answer) {
         InterviewSession session = sessionRepository.findById(sessionId)
@@ -152,6 +149,36 @@ private final InterviewSkillRepository interviewSkillRepository;
         question.setAnswer(savedAnswer);
         questionRepository.save(question);
 
+        // IMPORTANT: Analyze the answer and update session with weak and strong points
+        // This direct call ensures the analysis happens immediately
+        Map<String, List<String>> analysis = aiService.analyzeAnswer(
+                question.getContent(), answer, expectedAnswer);
+
+        // Add new points to the session (avoiding duplicates)
+        if (analysis.containsKey("strongPoints")) {
+            for (String point : analysis.get("strongPoints")) {
+                if (!session.getStrongPoints().contains(point)) {
+                    session.getStrongPoints().add(point);
+                }
+            }
+        }
+
+        if (analysis.containsKey("weakPoints")) {
+            for (String point : analysis.get("weakPoints")) {
+                if (!session.getWeakPoints().contains(point)) {
+                    session.getWeakPoints().add(point);
+                }
+            }
+        }
+
+        // Save the updated session
+        sessionRepository.save(session);
+
+        log.info("Updated session {} with {} strong points and {} weak points",
+                sessionId,
+                session.getStrongPoints().size(),
+                session.getWeakPoints().size());
+
         AnswerDTO answerDTO = answerMapper.toDTO(savedAnswer);
         answerDTO.setContent(answer);
         answerDTO.setQuestionId(questionId);
@@ -160,12 +187,13 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         return answerDTO;
     }
+
     @Transactional
     public QuestionDTO generateNextQuestion(Long userId, Long sessionId) {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Session not found"));
 
-     QuestionResponse questionResponse = aiService.generateQuestion(
+        QuestionResponse questionResponse = aiService.generateQuestion(
                 session.getPosition(),
                 session.getExperienceLevel(),
                 session.getInterviewContext()
@@ -187,6 +215,7 @@ private final InterviewSkillRepository interviewSkillRepository;
         QuestionDTO questionDTO = questionMapper.toDTO(savedQuestion);
         return questionDTO;
     }
+
     @Override
     @Transactional
     public void deleteInterview(Long userId, Long sessionId) {
@@ -221,6 +250,7 @@ private final InterviewSkillRepository interviewSkillRepository;
                 .map(questionMapper::toDTO)
                 .toList();
     }
+
     @Override
     public List<PerformanceData> getPerformanceBySkill(Long userId) {
         log.info("Getting performance by skill for user: {}", userId);
@@ -259,7 +289,6 @@ private final InterviewSkillRepository interviewSkillRepository;
 
             PerformanceData performanceData = new PerformanceData();
             performanceData.setSkill(skill.getName());
-            performanceData.setSkill(skill.getName());
             performanceData.setQuestionCount(skillOccurrences.size());
 
             // Calculate average score for questions related to this skill
@@ -290,7 +319,6 @@ private final InterviewSkillRepository interviewSkillRepository;
         log.info("Found {} skills with performance data for user {}", result.size(), userId);
         return result;
     }
-
 
     @Override
     public Map<String, Object> getOverallPerformance(Long userId) {
@@ -396,7 +424,7 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         Map<String, Object> result = new HashMap<>();
         result.put("userId", userId);
-        result.put("overallScore", overallScore );
+        result.put("overallScore", overallScore);
         result.put("totalInterviews", totalInterviews);
         result.put("totalQuestions", totalQuestions);
         result.put("answeredQuestions", answeredQuestions);
@@ -415,6 +443,7 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         return result;
     }
+
     private Map<String, Object> createEmptyPerformanceSummary(Long userId) {
         Map<String, Object> result = new HashMap<>();
         result.put("userId", userId);
@@ -434,6 +463,7 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         return result;
     }
+
     private int calculateRecentlyAddedTopics(List<InterviewSession> sessions) {
         if (sessions.size() <= 1) {
             return 0;
@@ -473,6 +503,7 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         return newTopics;
     }
+
     @Override
     public Map<String, Object> getOverallPerformanceData(Long userId) {
         log.info("Fetching overall performance data for user {}", userId);
@@ -539,6 +570,7 @@ private final InterviewSkillRepository interviewSkillRepository;
             return errorResult;
         }
     }
+
     private double calculateSessionScore(InterviewSession session) {
         if (session.getQuestions() == null || session.getQuestions().isEmpty()) {
             return 0.0;
@@ -556,7 +588,6 @@ private final InterviewSkillRepository interviewSkillRepository;
 
         return answeredQuestions > 0 ? totalScore / answeredQuestions : 0.0;
     }
-
 
     private Double calculateImprovementRate(List<InterviewSession> sessions) {
         if (sessions.size() < 2) {
@@ -576,3 +607,4 @@ private final InterviewSkillRepository interviewSkillRepository;
         }
     }
 }
+

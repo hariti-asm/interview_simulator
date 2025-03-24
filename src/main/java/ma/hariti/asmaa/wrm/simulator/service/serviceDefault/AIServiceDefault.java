@@ -16,8 +16,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -78,10 +77,8 @@ public class AIServiceDefault implements AIService {
         if (parts.length >= 2) {
             String questionPart = parts[0].replace("QUESTION:", "").trim();
 
-            // For the answer part, we need to handle if SKILL is present or not
             String answerPart;
             if (skillParts.length >= 2) {
-                // If SKILL is present, we need to extract only the answer part
                 answerPart = parts[1].split("SKILL:")[0].trim();
             } else {
                 answerPart = parts[1].trim();
@@ -89,7 +86,7 @@ public class AIServiceDefault implements AIService {
 
             qr.setQuestion(questionPart);
             qr.setExpectedAnswer(answerPart);
-            qr.setSkill(skillValue != null ? skillValue : "General Technical"); // Set default if no skill provided
+            qr.setSkill(skillValue != null ? skillValue : "General Technical");
         } else {
             throw new IllegalStateException("Invalid response format from AI");
         }
@@ -114,51 +111,6 @@ public class AIServiceDefault implements AIService {
                 question, answer
         );
         return callOpenAI(prompt);
-    }
-
-    private String callOpenAI(String prompt) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.set("Content-Type", "application/json");
-
-        Map<String, Object> requestBody = Map.of(
-                "model", "gpt-3.5-turbo",
-                "messages", List.of(
-                        Map.of("role", "system", "content", "You are an experienced technical interviewer."),
-                        Map.of("role", "user", "content", prompt)
-                ),
-                "temperature", 0.7
-        );
-
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-        try {
-            log.debug("Sending request to OpenAI API with prompt: {}", prompt);
-            ResponseEntity<Map> response = restTemplate.postForEntity(OPENAI_API_URL, request, Map.class);
-
-            if (response.getBody() != null && response.getBody().containsKey("choices")) {
-                List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-                if (!choices.isEmpty()) {
-                    Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-                    return (String) message.get("content");
-                }
-            }
-
-            throw new RuntimeException("Invalid response format from OpenAI API");
-
-        } catch (HttpClientErrorException.Unauthorized e) {
-            log.error("Authentication failed with OpenAI API. Please check your API key.", e);
-            throw new RuntimeException("Failed to authenticate with OpenAI API. Please check your API key.", e);
-        } catch (HttpClientErrorException.TooManyRequests e) {
-            log.error("Rate limit exceeded with OpenAI API.", e);
-            throw new RuntimeException("OpenAI API rate limit exceeded. Please try again later.", e);
-        } catch (HttpClientErrorException e) {
-            log.error("HTTP error occurred while calling OpenAI API: {}", e.getStatusCode(), e);
-            throw new RuntimeException("Error calling OpenAI API: " + e.getStatusCode(), e);
-        } catch (RestClientException e) {
-            log.error("Error occurred while calling OpenAI API", e);
-            throw new RuntimeException("Failed to communicate with OpenAI API", e);
-        }
     }
 
     @Override
@@ -225,4 +177,142 @@ public class AIServiceDefault implements AIService {
 
         return callOpenAI(prompt);
     }
+
+    @Override
+    public Map<String, List<String>> analyzeAnswer(String questionContent, String userAnswer, String expectedAnswer) {
+        log.info("Analyzing answer for question: {}", questionContent.substring(0, Math.min(50, questionContent.length())) + "...");
+
+        String prompt = String.format(
+                "You are an expert technical interviewer. Analyze the following interview answer:\n\n" +
+                        "QUESTION: %s\n\n" +
+                        "CANDIDATE'S ANSWER: %s\n\n" +
+                        "EXPECTED ANSWER: %s\n\n" +
+                        "Identify the strong points and weak points of the candidate's answer.\n" +
+                        "Format your response exactly like this:\n" +
+                        "STRONG_POINTS:\n" +
+                        "- [strong point 1]\n" +
+                        "- [strong point 2]\n" +
+                        "...\n\n" +
+                        "WEAK_POINTS:\n" +
+                        "- [weak point 1]\n" +
+                        "- [weak point 2]\n" +
+                        "...",
+                questionContent, userAnswer, expectedAnswer
+        );
+
+        String response = callOpenAI(prompt);
+        log.info("Received AI analysis response of length: {}", response.length());
+
+        Map<String, List<String>> result = parseAnalysisResponse(response);
+        log.info("Parsed {} strong points and {} weak points from AI response",
+                result.getOrDefault("strongPoints", Collections.emptyList()).size(),
+                result.getOrDefault("weakPoints", Collections.emptyList()).size());
+
+        return result;
+    }
+
+    private Map<String, List<String>> parseAnalysisResponse(String response) {
+        Map<String, List<String>> result = new HashMap<>();
+        List<String> strongPoints = new ArrayList<>();
+        List<String> weakPoints = new ArrayList<>();
+
+        try {
+            if (!response.contains("STRONG_POINTS:") || !response.contains("WEAK_POINTS:")) {
+                log.warn("AI response does not contain expected sections. Response: {}",
+                        response.substring(0, Math.min(200, response.length())) + "...");
+
+                strongPoints.add("Demonstrated some understanding of the topic");
+                weakPoints.add("Response could be more comprehensive");
+
+                result.put("strongPoints", strongPoints);
+                result.put("weakPoints", weakPoints);
+                return result;
+            }
+
+            String[] parts = response.split("WEAK_POINTS:");
+            if (parts.length >= 1) {
+                String strongPointsSection = parts[0].replace("STRONG_POINTS:", "").trim();
+                for (String line : strongPointsSection.split("\n")) {
+                    String trimmed = line.trim();
+                    if (trimmed.startsWith("-")) {
+                        strongPoints.add(trimmed.substring(1).trim());
+                    }
+                }
+            }
+
+            if (parts.length >= 2) {
+                String weakPointsSection = parts[1].trim();
+                for (String line : weakPointsSection.split("\n")) {
+                    String trimmed = line.trim();
+                    if (trimmed.startsWith("-")) {
+                        weakPoints.add(trimmed.substring(1).trim());
+                    }
+                }
+            }
+
+            // If we couldn't extract any points, add defaults
+            if (strongPoints.isEmpty()) {
+                strongPoints.add("Attempted to answer the question");
+            }
+
+            if (weakPoints.isEmpty()) {
+                weakPoints.add("Could improve answer comprehensiveness");
+            }
+        } catch (Exception e) {
+            log.error("Error parsing AI analysis response: {}", e.getMessage(), e);
+            // Add default points in case of error
+            strongPoints.add("Attempted to answer the question");
+            weakPoints.add("Could improve answer clarity and structure");
+        }
+
+        result.put("strongPoints", strongPoints);
+        result.put("weakPoints", weakPoints);
+        return result;
+    }
+
+    private String callOpenAI(String prompt) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.set("Content-Type", "application/json");
+
+        Map<String, Object> requestBody = Map.of(
+                "model", "gpt-3.5-turbo",
+                "messages", List.of(
+                        Map.of("role", "system", "content", "You are an experienced technical interviewer."),
+                        Map.of("role", "user", "content", prompt)
+                ),
+                "temperature", 0.7
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        try {
+            log.debug("Sending request to OpenAI API with prompt: {}", prompt);
+            ResponseEntity<Map> response = restTemplate.postForEntity(OPENAI_API_URL, request, Map.class);
+
+            if (response.getBody() != null && response.getBody().containsKey("choices")) {
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+                if (!choices.isEmpty()) {
+                    Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                    return (String) message.get("content");
+                }
+            }
+
+            throw new RuntimeException("Invalid response format from OpenAI API");
+
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed with OpenAI API. Please check your API key.", e);
+            throw new RuntimeException("Failed to authenticate with OpenAI API. Please check your API key.", e);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            log.error("Rate limit exceeded with OpenAI API.", e);
+            throw new RuntimeException("OpenAI API rate limit exceeded. Please try again later.", e);
+        } catch (HttpClientErrorException e) {
+            log.error("HTTP error occurred while calling OpenAI API: {}", e.getStatusCode(), e);
+            throw new RuntimeException("Error calling OpenAI API: " + e.getStatusCode(), e);
+        } catch (RestClientException e) {
+            log.error("Error occurred while calling OpenAI API", e);
+            throw new RuntimeException("Failed to communicate with OpenAI API", e);
+        }
+    }
 }
+
