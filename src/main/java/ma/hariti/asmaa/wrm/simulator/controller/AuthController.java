@@ -108,5 +108,12 @@ public class AuthController {
                     .body(Map.of("message", "An error occurred: " + e.getMessage()));
         }
     }
-
+    @GetMapping("/users/me")
+    public ResponseEntity<UserProfileResponse> getCurrentUser() {
+        org.springframework.security.core.Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        UserProfileResponse userProfile = authService.getUserProfile(email);
+        return ResponseEntity.ok(userProfile);
+    }
 }

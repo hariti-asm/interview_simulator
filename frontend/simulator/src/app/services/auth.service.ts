@@ -226,6 +226,9 @@ export class AuthService {
       })
     );
   }
-
-
+  getUserRole(): Observable<string> {
+    return this.userProfile.pipe(
+      map(profile => profile?.role || '')
+    );
+  }
 }

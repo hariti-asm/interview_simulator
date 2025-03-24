@@ -11,23 +11,27 @@ import {InterviewPopupComponent} from './components/interview-popup-component/in
 import {InterviewDetailComponent} from './components/interview-detail/interview-detail.component';
 import {AdminComponent} from './components/admin/admin.component';
 import {ChangePasswordComponent} from './components/change-password/change-password.component';
+import {RoleGuard} from './models/guards/role-guard.guard';
 
 export const routes: Routes = [
-
   { path: '', component: HomeComponent },
   { path: 'features', component: FeaturesComponent },
-  {path:'register',component:RegisterComponent},
+  { path: 'register', component: RegisterComponent },
   { path: 'testimonials', component: TestimonialsComponent },
-  {path:'change-password',component:ChangePasswordComponent},
+  { path: 'change-password', component: ChangePasswordComponent },
   {
     path: 'dashboard',
     component: DashboardComponent,
     canActivate: [AuthGuard]
   },
   { path: 'login', component: LoginComponent },
-  { path: 'profile', component:ProfileComponent},
+  { path: 'profile', component: ProfileComponent ,    canActivate: [AuthGuard] },
   { path: 'interview/setup', component: InterviewPopupComponent },
-  {path: 'interviews/:id', component: InterviewDetailComponent},
-  {path:'admin',component:AdminComponent},
-  { path: '**', redirectTo: '' }
+  { path: 'interviews/:id', component: InterviewDetailComponent },
+  {
+    path: 'admin',
+    component: AdminComponent,
+    canActivate: [RoleGuard],
+    data: { role: 'ADMIN' }
+  },  { path: '**', redirectTo: '' }
 ];

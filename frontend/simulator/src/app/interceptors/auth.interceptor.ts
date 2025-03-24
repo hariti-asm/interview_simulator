@@ -13,7 +13,6 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Skip authentication for auth endpoints
     if (
       request.url.includes("/api/v1/auth/login") ||
       request.url.includes("/api/v1/auth/register") ||

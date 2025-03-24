@@ -1,19 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { NgIf } from '@angular/common';
+import { NgIf, NgClass } from '@angular/common';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
+  standalone: true,
   imports: [
     RouterLink,
     RouterLinkActive,
     NgIf,
+    NgClass,
     CommonModule
-  ],
-  standalone: true
+  ]
 })
 export class HeaderComponent implements OnInit {
   menuOpen: boolean = false;
@@ -29,6 +30,16 @@ export class HeaderComponent implements OnInit {
     this.authService.authStateChanged.subscribe(() => {
       this.checkAuthStatus();
     });
+  }
+
+  // Close dropdown when clicking outside
+  @HostListener('document:click', ['$event'])
+  onClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    const dropdown = document.querySelector('.profile-dropdown-container');
+    if (dropdown && !dropdown.contains(target) && this.showProfileDropdown) {
+      this.showProfileDropdown = false;
+    }
   }
 
   checkAuthStatus(): void {
@@ -53,32 +64,67 @@ export class HeaderComponent implements OnInit {
     this.menuOpen = !this.menuOpen;
   }
 
-  toggleProfileDropdown(): void {
+  toggleProfileDropdown(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     this.showProfileDropdown = !this.showProfileDropdown;
   }
 
-  onStartInterview(): void {
-    if (this.isLoggedIn) {
-      this.router.navigate(['/dashboard']);
-    } else {
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/dashboard' } });
-    }
+  // Modified to ensure navigation works properly
+  navigateAndCloseDropdown(route: string): void {
+    console.log('Navigating to:', route);
+    // Remove any conditions that might prevent navigation
+    this.showProfileDropdown = false;
+    this.menuOpen = false;
+
+    // Use setTimeout to ensure UI state is updated before navigation
+    setTimeout(() => {
+      this.router.navigateByUrl(route).then(success => {
+        console.log('Navigation result:', success);
+      }).catch(error => {
+        console.error('Navigation error:', error);
+      });
+    }, 0);
   }
 
-  logout(): void {
+  onStartInterview(): void {
+    this.menuOpen = false;
+    // Remove any conditions that might prevent navigation
+    setTimeout(() => {
+      if (this.isLoggedIn) {
+        this.router.navigate(['/dashboard']);
+      } else {
+        this.router.navigate(['/login'], { queryParams: { returnUrl: '/dashboard' } });
+      }
+    }, 0);
+  }
+
+  logout(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    this.showProfileDropdown = false;
+    this.menuOpen = false;
+
     this.authService.logout().subscribe(
       () => {
         this.isLoggedIn = false;
         this.userProfile = null;
-        this.router.navigate(['/']);
-        this.showProfileDropdown = false;
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 0);
       },
       (error) => {
         console.error('Logout error:', error);
         this.isLoggedIn = false;
         this.userProfile = null;
-        this.router.navigate(['/']);
-        this.showProfileDropdown = false;
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 0);
       }
     );
   }

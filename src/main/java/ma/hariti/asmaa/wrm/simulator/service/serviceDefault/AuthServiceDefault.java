@@ -171,7 +171,6 @@ public class AuthServiceDefault implements AuthService {
 
 
     @Override
-    @Transactional
     public void registerUser(@Valid RegisterUserRequest request) {
         try {
             if (userRepository.existsByEmail(request.getEmail())) {
@@ -180,28 +179,33 @@ public class AuthServiceDefault implements AuthService {
 
             boolean isFirstUser = userRepository.count() == 0;
 
-            if (!isFirstUser) {  // Only check authentication if not the first user
+            if (!isFirstUser) {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 if (authentication == null || !authentication.isAuthenticated()) {
                     throw new IllegalStateException("No authenticated user found");
                 }
             } else {
-                request.setRole(Role.ADMIN);  // First user must be an admin
+                request.setRole(Role.ADMIN);
             }
 
             User user = createUserByRole(request);
             user.setPassword(passwordEncoder.encode(request.getPassword()));
 
             User savedUser = userRepository.save(user);
+            userRepository.flush();
+
             log.info("Created new user with role {} and email {}", request.getRole(), request.getEmail());
 
-            emailService.sendWelcomeEmail(savedUser.getEmail(), request.getPassword());
+            try {
+                emailService.sendWelcomeEmail(savedUser.getEmail(), request.getPassword());
+            } catch (Exception e) {
+                log.error("Failed to send welcome email to {}: {}", request.getEmail(), e.getMessage());
+            }
         } catch (Exception e) {
             log.error("Failed to register user {}: {}", request.getEmail(), e.getMessage());
             throw e;
         }
     }
-
     @Override
     public AuthResponse refreshToken(String refreshToken) {
         try {
@@ -265,6 +269,7 @@ public class AuthServiceDefault implements AuthService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .firstName(user.getName())
+                .role(user.getRole())
                 .build();
     }
 

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, NgClass, NgIf } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
+import { Role } from '../../../models/role.enum';
 
 @Component({
   selector: 'app-login',
@@ -49,7 +50,6 @@ export class LoginComponent implements OnInit {
       });
     }
   }
-
   onSubmit(): void {
     if (this.loginForm.valid) {
       this.isLoading = true;
@@ -60,12 +60,33 @@ export class LoginComponent implements OnInit {
       this.authService.login(email, password, rememberMe).subscribe({
         next: (response) => {
           this.isLoading = false;
+
           if (rememberMe) {
             localStorage.setItem('rememberedEmail', email);
           } else {
             localStorage.removeItem('rememberedEmail');
           }
-          this.router.navigateByUrl(this.returnUrl);
+
+          console.log("Login response:", response);
+
+          if (response.user && response.user.role) {
+            console.log("User role:", response.user.role);
+            console.log("Role type:", typeof response.user.role);
+
+            // Compare as string to handle both enum and string cases
+            const userRole = String(response.user.role);
+
+            if (userRole === 'ADMIN') {
+              console.log("User is an admin, redirecting to admin dashboard");
+              this.router.navigateByUrl('/admin');
+            } else {
+              console.log("User is not an admin, redirecting to user dashboard");
+              this.router.navigateByUrl(this.returnUrl);
+            }
+          } else {
+            console.log("No role found in user object, using default redirect");
+            this.router.navigateByUrl(this.returnUrl);
+          }
         },
         error: (error) => {
           this.isLoading = false;

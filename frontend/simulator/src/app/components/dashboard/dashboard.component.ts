@@ -348,14 +348,15 @@ export class DashboardComponent implements OnInit {
       },
     })
   }
-
   startNewInterview(): void {
     this.authService.getUserProfile().subscribe({
       next: (profile) => {
         if (profile) {
           this.userId = profile.id
           console.log("Navigating to interview setup with user ID:", this.userId)
-          this.router.navigate(["/interview/setup"])
+          this.router.navigate(["/interview/setup"], {
+            queryParams: { returnUrl: '/dashboard' }
+          })
         } else {
           console.log("No profile found, redirecting to login")
           this.router.navigate(["/login"])
