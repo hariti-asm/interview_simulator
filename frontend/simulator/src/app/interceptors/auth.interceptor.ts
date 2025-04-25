@@ -25,7 +25,6 @@ export class AuthInterceptor implements HttpInterceptor {
     const token = this.authService.getToken()
 
     if (token) {
-      // Clone the request with the Authorization header
       const authReq = request.clone({
         headers: request.headers.set("Authorization", `Bearer ${token}`),
       })
@@ -45,7 +44,6 @@ export class AuthInterceptor implements HttpInterceptor {
     } else {
       console.warn("No token available for request:", request.url)
 
-      // For API endpoints that require authentication, redirect to login
       if (request.url.includes("/api/interview/")) {
         console.log("Attempting to access protected endpoint without token, redirecting to login")
         this.router.navigate(["/login"])

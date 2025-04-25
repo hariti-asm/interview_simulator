@@ -111,4 +111,16 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    public String extractRole(String token) {
+        Claims claims = extractAllClaims(token);
+        String role = claims.get("role", String.class);
+
+        if (role != null && role.startsWith("\"") && role.endsWith("\"")) {
+            role = role.substring(1, role.length() - 1);
+        }
+
+        return role;
+    }
+
 }

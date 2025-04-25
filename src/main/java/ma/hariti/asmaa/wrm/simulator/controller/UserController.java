@@ -3,6 +3,7 @@ package ma.hariti.asmaa.wrm.simulator.controller;
 import lombok.extern.slf4j.Slf4j;
 import ma.hariti.asmaa.wrm.simulator.dto.request.InterviewSessionDTO;
 import ma.hariti.asmaa.wrm.simulator.dto.request.UserDTO;
+import ma.hariti.asmaa.wrm.simulator.entity.User;
 import ma.hariti.asmaa.wrm.simulator.security.UserDetailsImpl;
 import ma.hariti.asmaa.wrm.simulator.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -121,10 +123,13 @@ public class UserController {
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserDTO userDTO) {
         try {
             Long authenticatedUserId = extractAuthenticatedUserId();
-            log.info("User {} attempting to update user {}", authenticatedUserId, id);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if (!id.equals(authenticatedUserId)) {
-                log.warn("User {} attempted to update data for user {}", authenticatedUserId, id);
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+
+            if (!isAdmin && !id.equals(authenticatedUserId)) {
+                log.warn("User {} attempted to update user {}", authenticatedUserId, id);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "Access denied", "success", false, "status", 403));
             }
@@ -143,14 +148,16 @@ public class UserController {
                             "success", false, "status", 500));
         }
     }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
             Long authenticatedUserId = extractAuthenticatedUserId();
-            log.info("User {} attempting to delete user {}", authenticatedUserId, id);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if (!id.equals(authenticatedUserId)) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+
+            if (!isAdmin && !id.equals(authenticatedUserId)) {
                 log.warn("User {} attempted to delete user {}", authenticatedUserId, id);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "Access denied", "success", false, "status", 403));
@@ -170,7 +177,6 @@ public class UserController {
                             "success", false, "status", 500));
         }
     }
-
     @GetMapping("/{id}/interviews")
     public ResponseEntity<?> getUserInterviews(@PathVariable Long id) {
         try {

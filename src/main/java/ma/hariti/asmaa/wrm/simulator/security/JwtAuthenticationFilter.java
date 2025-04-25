@@ -3,7 +3,6 @@ package ma.hariti.asmaa.wrm.simulator.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 @Slf4j
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
@@ -31,30 +29,25 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        setFilterProcessesUrl("/api/v1/auth/login"); // Ensure this matches your frontend URL
+        setFilterProcessesUrl("/api/v1/auth/login");
     }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
         try {
-            // Log the incoming request body for debugging
             String requestBody = request.getReader().lines().collect(Collectors.joining());
             log.debug("Received login request body: {}", requestBody);
 
-            // Parse the request
             LoginRequest loginRequest = objectMapper.readValue(requestBody, LoginRequest.class);
 
-            // Store the full request for later use
             request.setAttribute("loginRequest", loginRequest);
 
-            // Create authentication token
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     loginRequest.getEmail(),
                     loginRequest.getPassword()
             );
 
-            // Set details from the request
             setDetails(request, authToken);
 
             return authenticationManager.authenticate(authToken);
@@ -72,7 +65,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         if (principal instanceof UserDetailsImpl) {
             UserDetailsImpl userDetails = (UserDetailsImpl) principal;
 
-            // Log user details to confirm
             log.info("Authenticated user: {}", userDetails.getUsername());
 
             // Generate JWT tokens
@@ -91,11 +83,9 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                     .user(userDetails.toUserResponse())
                     .build();
 
-            // Set JWT token in response header
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             objectMapper.writeValue(response.getOutputStream(), authResponse);
 
-            // Set the authentication object in the SecurityContext
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);

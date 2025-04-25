@@ -149,12 +149,10 @@ public class AIInterviewServiceDefault implements AIInterviewService {
         question.setAnswer(savedAnswer);
         questionRepository.save(question);
 
-        // IMPORTANT: Analyze the answer and update session with weak and strong points
-        // This direct call ensures the analysis happens immediately
+
         Map<String, List<String>> analysis = aiService.analyzeAnswer(
                 question.getContent(), answer, expectedAnswer);
 
-        // Add new points to the session (avoiding duplicates)
         if (analysis.containsKey("strongPoints")) {
             for (String point : analysis.get("strongPoints")) {
                 if (!session.getStrongPoints().contains(point)) {
@@ -255,7 +253,6 @@ public class AIInterviewServiceDefault implements AIInterviewService {
     public List<PerformanceData> getPerformanceBySkill(Long userId) {
         log.info("Getting performance by skill for user: {}", userId);
 
-        // Get all user's interview sessions
         List<InterviewSession> userSessions = sessionRepository.findByUserId(userId);
 
         if (userSessions.isEmpty()) {
@@ -268,7 +265,6 @@ public class AIInterviewServiceDefault implements AIInterviewService {
                 .map(InterviewSession::getId)
                 .collect(Collectors.toSet());
 
-        // Find all interview skills for these sessions
         List<InterviewSkill> interviewSkills = interviewSkillRepository.findByInterviewIdIn(sessionIds);
 
         if (interviewSkills.isEmpty()) {

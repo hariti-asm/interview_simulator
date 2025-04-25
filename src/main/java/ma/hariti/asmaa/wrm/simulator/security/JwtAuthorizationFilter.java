@@ -7,12 +7,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
 
 @Component
 @Slf4j
@@ -35,23 +37,14 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String requestPath = request.getRequestURI();
 
-        // Print all request headers for debugging
-        java.util.Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            log.debug("Header: {} = {}", headerName, request.getHeader(headerName));
-        }
-
         log.info("Processing request for path: {}", requestPath);
 
-        // Only skip authentication for public endpoints
         if (shouldSkipAuthentication(requestPath)) {
             log.debug("Skipping authentication for public path: {}", requestPath);
             filterChain.doFilter(request, response);
             return;
         }
 
-        // For protected endpoints, require authentication
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("No valid authorization header found for protected path: {}", requestPath);
             sendUnauthorizedResponse(response, "Authentication required");
@@ -71,19 +64,32 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                 log.info("Loaded user details for: {}", userEmail);
                 log.info("User authorities: {}", userDetails.getAuthorities());
 
-                if (userDetails instanceof UserDetailsImpl) {
-                    log.info("User ID: {}", ((UserDetailsImpl) userDetails).getId());
-                }
-
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
+                    String role = jwtService.extractRole(jwt);
+                    log.info("Extracted role from token: {}", role);
 
-                    log.info("Authentication successful for user: {}", userEmail);
+                    UsernamePasswordAuthenticationToken authToken;
+                    if (role != null && !role.isEmpty()) {
+                        // Create authority with the cleaned role (no quotes)
+                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+                        authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                Collections.singletonList(authority)
+                        );
+                        log.info("Created authentication with authority: {}", authority);
+                    } else {
+                        authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+                        log.info("Using default authorities from userDetails: {}", userDetails.getAuthorities());
+                    }
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.info("Authentication successful for user: {}", userEmail);
+
                     filterChain.doFilter(request, response);
                     return;
                 } else {
@@ -115,7 +121,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                         requestPath.startsWith("/api/v1/auth/login") ||
                         requestPath.startsWith("/api/v1/auth/forgot-password") ||
                         requestPath.startsWith("/api/v1/auth/reset-password") ||
-                        requestPath.startsWith("/api/v1/auth/refresh-token")
+                        requestPath.startsWith("/api/v1/auth/refresh-token") ||
+                        requestPath.startsWith("/api/debug/auth")
         );
     }
 }
